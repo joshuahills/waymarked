@@ -2,50 +2,56 @@
 
 ## Active Decisions
 
-### 2026-04-12: Routing Engine and Architecture Selection
+### 2026-04-12: Routing Engine Selection
 
-**Status:** Ready for Review | **Owner:** Mikey (Lead) | **Input:** Data (GIS Engineer)
+**Status:** LOCKED | **Owner:** Josh Hills | **Participants:** Mikey (Lead), Data (GIS Engineer)
 
-#### Decision: Use Valhalla as primary routing engine with Node.js/Express backend and React/Mapbox GL frontend
+#### Decision: Use GraphHopper as primary routing engine with Node.js/Express backend and React/Mapbox GL frontend
 
 **Reasoning:**
-Valhalla is the optimal choice for UK walking/hiking/running route planning:
-- **MIT license** (permissive, no commercial restrictions)
-- **Pedestrian/hiking profiles** with built-in elevation sampling (Skadi module)
-- **Self-hostable** — UK OSM extract (~1.5GB) runs on modest hardware (4-8GB RAM)
-- **Production-proven** — used by Mapbox, Stadia Maps
+GraphHopper is the optimal choice for UK walking/hiking/running route planning:
+- **Apache 2.0 license** (permissive, commercial-friendly)
+- **Hiking profiles** with native round-trip/circular route generation (hike.json)
+- **Self-hostable** — Java-based, containerizable, infra costs reasonable (~€19/mo on Hetzner CX42)
+- **Production-proven** — widely used for routing applications
 - **Elevation-aware** — critical for hill/peak avoidance and scenic preferences
-- **Isochrones & map-matching** — valuable for "how far in X time" and GPS trace cleanup
+- **Route diversity support** — native circular/round-trip routing
 
 **Architecture:**
-- **Backend:** Node.js + Express (Valhalla has excellent Node.js bindings; Python alternative via FastAPI)
+- **Backend:** Node.js + Express (excellent GraphHopper API client bindings; Python alternative via FastAPI)
 - **Frontend:** React + Mapbox GL JS (best vector tile performance, free tier 50k loads/month)
-- **Deployment:** Docker-based Valhalla on single VPS initially; scale horizontally as needed
+- **Deployment:** Docker-based GraphHopper on single VPS; scale horizontally as needed
 - **Mapping data:** OSM via Mapbox vector tiles or self-hosted OpenMapTiles
 
 **Route Customization Mapping:**
-- **Surface type:** `use_roads`, `use_tracks` costing weights
-- **Avoid roads:** `use_roads: 0`
-- **Avoid hills:** `max_grade` + elevation penalties
-- **Prefer scenic:** Weighted by `surface`, `park`, `forest` tags
-- **Waypoints:** Standard Valhalla location array support
-- **Elevation profiles:** Via Skadi elevation sampling
+- **Surface type:** Custom costing weights for `surface` tags
+- **Avoid roads:** Turn penalties on certain highway types
+- **Avoid hills:** Grade/elevation-based penalties
+- **Prefer scenic:** Weighted by terrain and surface characteristics
+- **Waypoints:** Standard array support
+- **Elevation profiles:** Via DEM integration (OS Terrain 50 for UK)
+- **Round-trip/circular:** Native support via GraphHopper routing parameters
 
-**Alternatives Evaluated:**
-- **GraphHopper:** Apache 2.0 (good), excellent hiking profiles, Java-based (heavier), API pricing escalates, excellent round-trip support
+**Alternatives Considered:**
+- **Valhalla:** MIT license (good), multi-modal, C++-based, lacks native round-trip support (would require custom algorithm)
 - **OSRM:** BSD license (good), car-focused, limited pedestrian profiles, no elevation support
-- **OpenRouteService:** GPL-3.0 (hard no for commercial), forked from GraphHopper
+- **OpenRouteService:** GPL-3.0 (incompatible with commercial licensing), forked from GraphHopper
 
-**Dependencies:**
-- Data validation of UK OSM footpath coverage (footpaths, surface tags, elevation accuracy) — critical path
-- Spike: Deploy Valhalla with UK extract, test pedestrian routing + custom costing
-- **Risk:** Round-trip routing — Valhalla lacks native support; may need custom algorithm or GraphHopper fallback
+**Validation Tasks (Spike + Data):**
+- Brand spike: Deploy GraphHopper with UK OSM extract, validate performance and customization
+- Data validation: Verify UK OSM footpath coverage (highways, designations, surface tags, elevation data)
+
+**Key Advantages:**
+- **Round-trip routing:** Native support ✅ (advantage over Valhalla)
+- **Hiking profiles:** Excellent out-of-box hiking profiles ✅
+- **Cost:** Infra costs within reasonable bounds (~€19/mo)
+- **Licensing:** Apache 2.0 ✅ commercial-friendly
 
 **Next Steps:**
-1. Data validates UK OSM coverage within 1 week
-2. Backend team spikes Valhalla deployment with UK extract
-3. Test custom costing: "avoid roads", "prefer scenic", elevation-based routing
-4. Decide: If OSM insufficient, evaluate contribution to OSM vs hybrid OS MasterMap approach
+1. Brand: Spike GraphHopper deployment with UK OSM extract and custom hiking profiles
+2. Data: Validate UK OSM footpath coverage and elevation data completeness
+3. Backend: Integrate GraphHopper Node.js client bindings
+4. Testing: Validate custom costing for user preferences (surface, hills, scenic routing)
 
 ---
 
