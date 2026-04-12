@@ -3,108 +3,208 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Waymarked - UK Route Planner</title>
+    <title>Waymarked - UK Walk &amp; Hike Planner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
+        /* ── Design tokens ──────────────────────────────────────────────────── */
+        :root {
+            --clr-earth:    #2d5a27;
+            --clr-earth-dk: #1e3d1a;
+            --clr-earth-lt: #e8f5e4;
+            --clr-stone:    #f4f1ec;
+            --clr-trail:    #c8590a;
+            --clr-trail-lt: #fdf0e8;
+            --clr-ink:      #1c1c1e;
+            --clr-muted:    #6b6b6b;
+            --clr-border:   #ddd8d0;
+            --clr-white:    #ffffff;
+        }
+
+        /* ── Reset ──────────────────────────────────────────────────────────── */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        /* ── Base ───────────────────────────────────────────────────────────── */
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
             height: 100vh;
             display: flex;
             flex-direction: column;
+            color: var(--clr-ink);
         }
 
+        /* ── Header ─────────────────────────────────────────────────────────── */
         header {
-            background: #1a1a1a;
-            color: white;
-            padding: 1rem 1.5rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: 64px;
+            background: var(--clr-earth);
+            color: var(--clr-white);
+            padding: 0 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+        }
+
+        .header-icon {
+            flex-shrink: 0;
+            opacity: 0.92;
+        }
+
+        .header-title {
+            display: flex;
+            flex-direction: column;
+            gap: 0.05rem;
         }
 
         header h1 {
-            font-size: 1.5rem;
+            font-size: 1.25rem;
             font-weight: 600;
+            letter-spacing: -0.01em;
+            line-height: 1.2;
         }
 
+        .header-tagline {
+            font-size: 0.75rem;
+            font-weight: 400;
+            color: rgba(255,255,255,0.65);
+            letter-spacing: 0.02em;
+        }
+
+        /* ── Layout ─────────────────────────────────────────────────────────── */
         .container {
             display: flex;
             flex: 1;
             overflow: hidden;
         }
 
+        /* ── Sidebar ────────────────────────────────────────────────────────── */
         .sidebar {
-            width: 350px;
-            background: #f8f9fa;
+            width: 380px;
+            background: var(--clr-stone);
             padding: 1.5rem;
             overflow-y: auto;
-            border-right: 1px solid #dee2e6;
+            flex-shrink: 0;
+            box-shadow: 2px 0 12px rgba(0,0,0,0.06);
         }
 
+        .sidebar::-webkit-scrollbar { width: 5px; }
+        .sidebar::-webkit-scrollbar-track { background: transparent; }
+        .sidebar::-webkit-scrollbar-thumb { background: var(--clr-border); border-radius: 5px; }
+
+        /* ── Section dividers ───────────────────────────────────────────────── */
+        hr.divider {
+            border: none;
+            border-top: 1px solid var(--clr-border);
+            margin: 0.75rem 0;
+        }
+
+        /* ── Form groups ────────────────────────────────────────────────────── */
         .form-group {
             margin-bottom: 1.25rem;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.45rem;
             font-weight: 500;
-            color: #495057;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
+            color: var(--clr-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
         }
 
+        /* ── Inputs & selects ───────────────────────────────────────────────── */
         input[type="number"],
         select {
             width: 100%;
-            padding: 0.6rem;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-            font-size: 0.95rem;
+            padding: 0.65rem 0.9rem;
+            border: 1.5px solid var(--clr-border);
+            border-radius: 10px;
+            font-size: 0.92rem;
+            font-family: inherit;
+            background: var(--clr-white);
+            color: var(--clr-ink);
+            transition: border-color 0.15s, box-shadow 0.15s;
+            appearance: none;
+            -webkit-appearance: none;
         }
 
         input[type="number"]:focus,
         select:focus {
             outline: none;
-            border-color: #007bff;
-            box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+            border-color: var(--clr-earth);
+            box-shadow: 0 0 0 3px rgba(45,90,39,0.15);
         }
 
-        button {
-            width: 100%;
-            padding: 0.75rem;
-            background: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            font-size: 1rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        button:hover {
-            background: #0056b3;
-        }
-
-        button:active {
-            background: #004085;
-        }
-
-        button:disabled {
-            background: #6c757d;
+        input[type="number"]:disabled,
+        select:disabled {
+            opacity: 0.45;
             cursor: not-allowed;
         }
 
+        /* Custom select arrow */
+        select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b6b6b' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.9rem center;
+            padding-right: 2.2rem;
+        }
+
+        /* ── Plan Route button ──────────────────────────────────────────────── */
+        button {
+            width: 100%;
+            padding: 0.85rem;
+            background: var(--clr-earth);
+            color: var(--clr-white);
+            border: none;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background 0.18s, transform 0.15s, box-shadow 0.15s;
+            position: relative;
+        }
+
+        button::after {
+            content: ' →';
+            font-weight: 400;
+        }
+
+        button:hover {
+            background: var(--clr-earth-dk);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(45,90,39,0.28);
+        }
+
+        button:active {
+            background: var(--clr-earth-dk);
+            transform: translateY(0);
+            box-shadow: none;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* ── Stats panel ────────────────────────────────────────────────────── */
         .stats {
             margin-top: 1.5rem;
-            padding: 1rem;
-            background: white;
-            border-radius: 4px;
-            border: 1px solid #dee2e6;
+            padding: 1.25rem;
+            background: var(--clr-white);
+            border-radius: 14px;
+            border: 1px solid var(--clr-border);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.07);
             display: none;
         }
 
@@ -113,100 +213,109 @@
         }
 
         .stats h3 {
-            font-size: 1rem;
-            margin-bottom: 0.75rem;
-            color: #1a1a1a;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 0.9rem;
+            color: var(--clr-earth);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
         }
 
         .stat-row {
             display: flex;
             justify-content: space-between;
-            padding: 0.4rem 0;
-            border-bottom: 1px solid #f1f3f5;
+            align-items: center;
+            padding: 0.45rem 0;
+            border-bottom: 1px solid var(--clr-border);
         }
 
         .stat-row:last-child {
             border-bottom: none;
+            padding-bottom: 0;
         }
 
         .stat-label {
-            color: #6c757d;
-            font-size: 0.9rem;
+            color: var(--clr-muted);
+            font-size: 0.8rem;
+            font-weight: 400;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
         }
 
         .stat-value {
-            font-weight: 500;
-            color: #212529;
+            font-weight: 600;
+            font-size: 1.05rem;
+            color: var(--clr-ink);
         }
 
+        /* ── Error banner ───────────────────────────────────────────────────── */
         .error {
             margin-top: 1rem;
-            padding: 0.75rem;
-            background: #f8d7da;
-            border: 1px solid #f5c6cb;
-            border-radius: 4px;
-            color: #721c24;
-            font-size: 0.9rem;
+            padding: 0.8rem 1rem;
+            background: #fff0f0;
+            border: 1.5px solid #f5a8a8;
+            border-radius: 10px;
+            color: #c0392b;
+            font-size: 0.875rem;
             display: none;
+        }
+
+        .error::before {
+            content: '⚠ ';
+            font-style: normal;
         }
 
         .error.visible {
             display: block;
         }
 
+        /* ── Map ────────────────────────────────────────────────────────────── */
         #map {
             flex: 1;
-            background: #e9ecef;
+            background: var(--clr-stone);
         }
 
+        /* ── Helper text ────────────────────────────────────────────────────── */
         .helper-text {
-            font-size: 0.85rem;
-            color: #6c757d;
-            margin-top: 0.25rem;
+            font-size: 0.78rem;
+            color: var(--clr-muted);
+            margin-top: 0.35rem;
         }
 
+        /* ── Distance inputs ────────────────────────────────────────────────── */
         .distance-inputs {
             display: grid;
             grid-template-columns: 2fr 1fr;
             gap: 0.5rem;
         }
 
-        input[type="number"]:disabled,
-        select:disabled {
-            background: #e9ecef;
-            color: #adb5bd;
-            cursor: not-allowed;
-            border-color: #dee2e6;
-        }
-
-        /* ── Place search ─────────────────────────────────────────────────── */
-
+        /* ── Place search ───────────────────────────────────────────────────── */
         .search-wrapper {
             position: relative;
         }
 
         .search-input {
             width: 100%;
-            padding: 0.6rem;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-            font-size: 0.95rem;
+            padding: 0.65rem 0.9rem;
+            border: 1.5px solid var(--clr-border);
+            border-radius: 10px;
+            font-size: 0.92rem;
             font-family: inherit;
-            background: white;
-            color: #212529;
+            background: var(--clr-white);
+            color: var(--clr-ink);
+            transition: border-color 0.15s, box-shadow 0.15s;
         }
 
         .search-input:focus {
             outline: none;
-            border-color: #007bff;
-            box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+            border-color: var(--clr-earth);
+            box-shadow: 0 0 0 3px rgba(45,90,39,0.15);
         }
 
         .search-input:disabled {
-            background: #e9ecef;
-            color: #adb5bd;
+            opacity: 0.45;
             cursor: not-allowed;
-            border-color: #dee2e6;
         }
 
         .search-dropdown {
@@ -214,15 +323,15 @@
             top: 100%;
             left: 0;
             right: 0;
-            background: white;
-            border: 1px solid #ced4da;
+            background: var(--clr-white);
+            border: 1.5px solid var(--clr-border);
             border-top: none;
-            border-radius: 0 0 4px 4px;
+            border-radius: 0 0 10px 10px;
             max-height: 210px;
             overflow-y: auto;
             z-index: 9999;
             display: none;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.1);
         }
 
         .search-dropdown.visible {
@@ -230,12 +339,13 @@
         }
 
         .search-dropdown-item {
-            padding: 0.5rem 0.75rem;
+            padding: 0.5rem 0.9rem;
             cursor: pointer;
             font-size: 0.82rem;
-            line-height: 1.35;
-            border-bottom: 1px solid #f1f3f5;
-            color: #212529;
+            line-height: 1.4;
+            border-bottom: 1px solid var(--clr-border);
+            color: var(--clr-ink);
+            transition: background 0.1s;
         }
 
         .search-dropdown-item:last-child {
@@ -243,30 +353,31 @@
         }
 
         .search-dropdown-item:hover {
-            background: #e8f4fd;
+            background: var(--clr-earth-lt);
         }
 
         .search-dropdown-item.no-results {
-            color: #6c757d;
+            color: var(--clr-muted);
             cursor: default;
         }
 
         .search-dropdown-item.no-results:hover {
-            background: white;
+            background: var(--clr-white);
         }
 
-        /* ── Map-click mode toggle ────────────────────────────────────────── */
-
+        /* ── Map-click mode toggle ──────────────────────────────────────────── */
         .map-mode-group {
             margin-bottom: 1.25rem;
         }
 
-        .map-mode-group > span {
+        .map-mode-label {
             display: block;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.45rem;
             font-weight: 500;
-            color: #495057;
-            font-size: 0.9rem;
+            font-size: 0.75rem;
+            color: var(--clr-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
         }
 
         .map-mode-toggle {
@@ -274,66 +385,73 @@
             gap: 0.4rem;
         }
 
-        /* Mode buttons override the global button styles */
+        /* Mode buttons — pill shaped, override global button styles */
         .mode-btn {
             flex: 1;
-            width: auto;               /* override button { width: 100% } */
-            padding: 0.45rem 0.35rem;
-            font-size: 0.8rem;
-            background: white;
-            color: #495057;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
+            width: auto;
+            padding: 0.42rem 0.5rem;
+            font-size: 0.78rem;
+            background: var(--clr-white);
+            color: var(--clr-muted);
+            border: 1.5px solid var(--clr-border);
+            border-radius: 20px;
             cursor: pointer;
             font-weight: 500;
             font-family: inherit;
-            transition: background 0.15s, border-color 0.15s, color 0.15s;
+            transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+        }
+
+        /* Reset the global button::after arrow for mode buttons */
+        .mode-btn::after {
+            content: '';
         }
 
         .mode-btn:hover {
-            background: #f0f0f0;
-            border-color: #adb5bd;
-            color: #212529;
+            background: var(--clr-stone);
+            border-color: #b8b4ac;
+            color: var(--clr-ink);
+            transform: none;
+            box-shadow: none;
         }
 
         .mode-btn:active {
-            background: #e2e6ea;
+            transform: none;
         }
 
         .mode-btn.active-start {
-            background: #28a745;
-            color: white;
-            border-color: #28a745;
+            background: var(--clr-earth);
+            color: var(--clr-white);
+            border-color: var(--clr-earth);
         }
 
         .mode-btn.active-start:hover {
-            background: #218838;
-            border-color: #218838;
-            color: white;
+            background: var(--clr-earth-dk);
+            border-color: var(--clr-earth-dk);
+            color: var(--clr-white);
         }
 
         .mode-btn.active-end {
-            background: #dc3545;
-            color: white;
-            border-color: #dc3545;
+            background: var(--clr-trail);
+            color: var(--clr-white);
+            border-color: var(--clr-trail);
         }
 
         .mode-btn.active-end:hover {
-            background: #c82333;
-            border-color: #c82333;
-            color: white;
+            background: #a84a08;
+            border-color: #a84a08;
+            color: var(--clr-white);
         }
 
         .mode-btn.active-off {
-            background: #6c757d;
-            color: white;
-            border-color: #6c757d;
+            background: var(--clr-muted);
+            color: var(--clr-white);
+            border-color: var(--clr-muted);
         }
 
         .mode-btn.active-off:hover {
-            background: #5a6268;
-            border-color: #5a6268;
-            color: white;
+            background: #555;
+            border-color: #555;
+            color: var(--clr-white);
         }
 
         /* Crosshair cursor on map when a mode is active */
@@ -342,6 +460,7 @@
             cursor: crosshair !important;
         }
 
+        /* ── Responsive ─────────────────────────────────────────────────────── */
         @media (max-width: 768px) {
             .container {
                 flex-direction: column;
@@ -356,7 +475,19 @@
 </head>
 <body>
     <header>
-        <h1>Waymarked</h1>
+        <!-- Minimal winding-path trail icon -->
+        <svg class="header-icon" width="24" height="24" viewBox="0 0 24 24" fill="none"
+             xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M3 20 C6 20 6 14 9 14 C12 14 12 18 15 16 C18 14 18 8 21 6"
+                  stroke="rgba(255,255,255,0.80)" stroke-width="2.2"
+                  stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <circle cx="3"  cy="20" r="1.6" fill="rgba(255,255,255,0.70)"/>
+            <circle cx="21" cy="6"  r="1.6" fill="rgba(200,89,10,0.90)"/>
+        </svg>
+        <div class="header-title">
+            <h1>Waymarked</h1>
+            <span class="header-tagline">UK Walk &amp; Hike Planner</span>
+        </div>
     </header>
 
     <div class="container">
@@ -380,7 +511,7 @@
 
                 <!-- End Point — place search replaces number inputs -->
                 <div class="form-group">
-                    <label for="endSearch">End Point <span style="font-weight:400;color:#6c757d;">(optional)</span></label>
+                    <label for="endSearch">End Point <span style="font-weight:400;text-transform:none;">(optional)</span></label>
                     <div class="search-wrapper">
                         <input type="text" id="endSearch" class="search-input"
                                placeholder="Search place, postcode or address…"
@@ -393,15 +524,19 @@
                     <div class="helper-text">Leave blank for round trip</div>
                 </div>
 
+                <hr class="divider">
+
                 <!-- Map-click mode toggle -->
                 <div class="map-mode-group">
-                    <span>Click map to place point</span>
+                    <span class="map-mode-label">Click map to place point</span>
                     <div class="map-mode-toggle">
                         <button type="button" class="mode-btn" id="modeStartBtn">📍 Set Start</button>
                         <button type="button" class="mode-btn" id="modeEndBtn">📍 Set End</button>
                         <button type="button" class="mode-btn active-off" id="modeOffBtn">✕ Off</button>
                     </div>
                 </div>
+
+                <hr class="divider">
 
                 <div class="form-group">
                     <label for="distance">Distance (round trip only)</label>
@@ -431,15 +566,15 @@
             <div id="stats" class="stats">
                 <h3>Route Summary</h3>
                 <div class="stat-row">
-                    <span class="stat-label">Distance</span>
+                    <span class="stat-label"><span aria-hidden="true">📏</span> Distance</span>
                     <span class="stat-value" id="statDistance">-</span>
                 </div>
                 <div class="stat-row">
-                    <span class="stat-label">Estimated Time</span>
+                    <span class="stat-label"><span aria-hidden="true">⏱</span> Estimated Time</span>
                     <span class="stat-value" id="statTime">-</span>
                 </div>
                 <div class="stat-row">
-                    <span class="stat-label">Instructions</span>
+                    <span class="stat-label"><span aria-hidden="true">🗺</span> Instructions</span>
                     <span class="stat-value" id="statInstructions">-</span>
                 </div>
             </div>
