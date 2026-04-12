@@ -134,3 +134,48 @@ src/
 - Created `infra/graphhopper/data/.gitkeep` to track empty directory
 - OSM extracts and graph cache will be stored in `data/` (gitignored)
 - Bind mount is read-write so GraphHopper can build/cache graph on first run
+
+### Round-Trip Routing Support (2026-04-12)
+
+**GraphHopper Round-Trip Mode:**
+- GraphHopper supports native round-trip routing via `algorithm=round_trip` query parameter
+- Parameters: `round_trip.distance` (metres), `round_trip.seed` (random integer for route variety)
+- Only requires a single `point=` (start location); no destination needed
+- Distance is specified in metres; seed controls route generation randomness
+
+**API Design — Distance Unit Conversion:**
+- Client sends distance in km or miles via `DistanceUnit` field ("kilometres" or "miles")
+- API layer converts to metres before passing to `GraphHopperClient`:
+  - 1 km = 1000 m
+  - 1 mile = 1609.344 m
+- Internal `RouteRequest.Distance` is always in metres (double?)
+- Separation of concerns: client-facing units vs internal representation
+
+**Model Changes:**
+- Added `DistanceUnit` enum: `Kilometres | Miles` (in `RouteRequest.cs`)
+- Made `RouteRequest.To` optional (`double[]?`) to support single-point round trips
+- Added `RouteRequest.Distance` (nullable double, in metres)
+- Added `RouteRequest.DistanceUnit` property (kept for reference, conversion happens in API layer)
+
+**GraphHopperClient Branching:**
+- Client now branches on `request.To == null`:
+  - **A→B mode (To is NOT null):** Existing behavior — append `&point={To}`, no algorithm param
+  - **Round-trip mode (To IS null):** Use `algorithm=round_trip`, `round_trip.distance`, `round_trip.seed`
+- Uses `Random.Shared.Next()` for seed generation (different route each request)
+- Logs round-trip mode activation with distance for debugging
+
+**API Request Model:**
+- Created `ApiRouteRequest` record in `Program.cs`:
+  - `From: double[]` (required)
+  - `To: double[]?` (optional)
+  - `Distance: double?` (client units, km or miles)
+  - `DistanceUnit: string?` (default "kilometres")
+  - `Profile: string?` (default "hike")
+- Validation:
+  - `From` must be non-null and contain at least 2 elements (lat, lon)
+  - If `To` is null, `Distance` must be > 0 (round-trip requires distance)
+- Returns `Results.ValidationProblem` with clear messages on validation failure
+
+**Backward Compatibility:**
+- A→B routing unchanged: existing clients sending `From` + `To` work exactly as before
+- Round-trip is opt-in: only triggered when `To` is omitted

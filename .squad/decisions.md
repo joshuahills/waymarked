@@ -177,6 +177,125 @@ GraphHopper is the optimal choice for UK walking/hiking/running route planning:
 **Recommendation Summary:**
 Optimal stack balances low initial cost (~$20-50/month MVP), data quality (good UK coverage), legal compliance (open licences or clear commercial terms), and technical feasibility (mature open-source tools).
 
+### 2026-04-12: Round-trip routing support added
+
+**Status:** IMPLEMENTED | **Owner:** Brand
+
+#### Decision: Make RouteRequest.To optional; use GraphHopper round_trip algorithm when omitted
+
+**Summary:**
+RouteRequest now supports round-trip (circular) routing. The destination (To) field is optional; when omitted, GraphHopperClient uses GraphHopper's native `algorithm=round_trip` with a distance parameter instead of A→B routing.
+
+**Implementation:**
+- `RouteRequest.To` is nullable
+- When To is null, GraphHopperClient calls GraphHopper with `algorithm=round_trip` and `round_trip.distance` (in metres)
+- Distance unit conversion (km/mi → metres) happens in API layer (`Program.cs`)
+- Single-point A→B routing remains unchanged
+
+**Benefits:**
+- Frontend can request routes by distance from a single start point
+- Leverages GraphHopper's native round-trip support
+- No breaking changes to existing A→B routing
+
+**Validation:**
+✅ Both projects build successfully  
+✅ Commit: 6a4ec8a
+
+---
+
+### 2026-04-12: GraphHopper Dockerfile (Local Build)
+
+**Status:** IMPLEMENTED | **Owner:** Brand
+
+#### Decision: Build GraphHopper container image locally using Dockerfile in AppHost
+
+**Problem:**
+GraphHopper does not publish an official Docker image. Reference `graphhopper/graphhopper:latest` returns 404 on Docker Hub and 403 on GHCR. The previous `AddContainer(...)` call failed at runtime.
+
+**Solution:**
+Build a minimal GraphHopper container locally using `AddDockerfile` in `AppHost.cs`, allowing Aspire to handle the build automatically during `aspire run`.
+
+**Implementation:**
+- **`infra/graphhopper/Dockerfile`:**
+  - Base: `eclipse-temurin:21-jre` (Java 21 JRE; GraphHopper 11.x requires Java 17+)
+  - Downloads GraphHopper 11.0 web JAR from Maven Central at build time
+  - ENTRYPOINT uses `sh -c` wrapper for `$JAVA_OPTS` expansion at runtime
+  - CMD defaults to `--config /data/config.yml`
+  - No USER instruction (avoids Podman namespace conflicts)
+
+- **`src/Waymarked.AppHost/AppHost.cs`:**
+  - Replaced `AddContainer(...)` with `AddDockerfile("graphhopper", "../../infra/graphhopper")`
+  - Same bind mounts and environment configuration as before
+
+- **`infra/graphhopper/docker-compose.yml`:**
+  - Updated to use `build: .` instead of pre-built image
+  - Config mount path aligned: `./config.yml:/data/config.yml:ro`
+
+**Trade-offs:**
+- First `aspire run` downloads JAR (~80MB) and builds image; subsequent runs use cache
+- Requires Maven Central internet access in CI/CD environments
+- Version pinned (11.0) for reproducibility
+
+**Rationale:**
+GraphHopper distributes via Maven Central JAR only; this is the supported self-hosted deployment path.
+
+---
+
+### 2026-04-12: Frontend Architecture — Zero-Build Web App with YARP Proxy
+
+**Status:** IMPLEMENTED | **Owner:** Mouth (Frontend Dev)
+
+#### Decision: Plain HTML/CSS/JS with YARP reverse proxy; no build step
+
+**Problem:**
+Building initial Waymarked.Web frontend to display GraphHopper-backed routes. Choose between SPA framework (React/Next.js) with build pipeline or plain HTML/CSS/JS.
+
+**Decision:**
+**Plain HTML/CSS/JS with no build step.**
+
+**Rationale:**
+- **Simplicity:** No npm, webpack, or build config overhead
+- **Speed:** Instant iteration — refresh browser to see changes
+- **Clarity:** Ideal for prototyping; can upgrade later if needed
+- **Mobile-first:** Responsive CSS designed manually for better control
+
+**Technical Stack:**
+- **Leaflet 1.9.4** (CDN) — battle-tested, OSM-friendly
+- **OpenTopoMap tiles** — topographic layer ideal for UK walking routes
+- **YARP 2.2.0** reverse proxy — avoids CORS by proxying `/api/{**catch-all}` to `waymarked-api`
+- **Aspire service discovery** — resolves backend URL automatically
+
+**UI/UX:**
+- Dark header, light sidebar, full-height map
+- Mobile-responsive (sidebar stacks above map on narrow screens)
+- Lat/lon inputs for start/end points
+- Optional end point — defaults to start for round trips
+- Stats panel: distance (km/mi), time, instruction count
+
+**Files Created:**
+- `src/Waymarked.Web/Waymarked.Web.csproj`
+- `src/Waymarked.Web/Program.cs`
+- `src/Waymarked.Web/appsettings.json`
+- `src/Waymarked.Web/wwwroot/index.html`
+
+**Updated:**
+- `src/Waymarked.AppHost/AppHost.cs` — added web project reference
+- `src/Waymarked.AppHost/Waymarked.AppHost.csproj` — added ProjectReference
+- `src/Waymarked.sln` — added Waymarked.Web project
+
+**Trade-offs:**
+- ⚠️ No TypeScript safety
+- ⚠️ Manual DOM manipulation in JS
+- ⚠️ Will need refactor if app grows complex
+
+**Migration Path:**
+If scaling is needed:
+1. Keep YARP proxy pattern (works with any frontend)
+2. Migrate to Vite + React (or Next.js) while keeping same API contract
+3. YARP config stays identical — just swap wwwroot content
+
+---
+
 ## Governance
 
 - All meaningful changes require team consensus
