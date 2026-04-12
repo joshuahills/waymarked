@@ -314,18 +314,10 @@
             errorDiv.classList.remove('visible');
         }
         
-        function showStats(distance, time, instructions) {
-            const distanceKm = (distance / 1000).toFixed(1);
-            const distanceMiles = (distance / 1609.34).toFixed(1);
+        function showStats(distanceKm, distanceMiles, duration, instructions) {
             document.getElementById('statDistance').textContent = `${distanceKm} km (${distanceMiles} mi)`;
-            
-            const hours = Math.floor(time / 3600000);
-            const minutes = Math.floor((time % 3600000) / 60000);
-            const timeStr = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
-            document.getElementById('statTime').textContent = timeStr;
-            
+            document.getElementById('statTime').textContent = duration;
             document.getElementById('statInstructions').textContent = instructions;
-            
             statsDiv.classList.add('visible');
         }
         
@@ -399,20 +391,12 @@
                 
                 const data = await response.json();
                 
-                if (!data.paths || data.paths.length === 0) {
+                if (!data.points || !data.points.coordinates) {
                     throw new Error('No route found');
                 }
                 
-                const path = data.paths[0];
-                
-                // Extract coordinates from GeoJSON
-                let coordinates;
-                if (path.points && path.points.type === 'LineString') {
-                    // GeoJSON format: coordinates are [lon, lat], need to swap to [lat, lon] for Leaflet
-                    coordinates = path.points.coordinates.map(coord => [coord[1], coord[0]]);
-                } else {
-                    throw new Error('Unexpected route format');
-                }
+                // GeoJSON coordinates are [lon, lat] — swap to [lat, lon] for Leaflet
+                const coordinates = data.points.coordinates.map(coord => [coord[1], coord[0]]);
                 
                 // Remove old route if exists
                 if (routeLayer) {
@@ -431,9 +415,9 @@
                     padding: [50, 50]
                 });
                 
-                // Show stats
-                const instructionCount = path.instructions ? path.instructions.length : 0;
-                showStats(path.distance, path.time, instructionCount);
+                // Show stats using pre-computed values from the API
+                const instructionCount = data.instructions ? data.instructions.length : 0;
+                showStats(data.distanceKm, data.distanceMiles, data.durationFormatted, instructionCount);
                 
             } catch (error) {
                 console.error('Route planning error:', error);
