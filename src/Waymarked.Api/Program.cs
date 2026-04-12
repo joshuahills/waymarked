@@ -11,10 +11,8 @@ builder.Services.AddProblemDetails();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
-// Add GraphHopper client
-var graphHopperUrl = builder.Configuration.GetConnectionString("graphhopper") 
-    ?? throw new InvalidOperationException("GraphHopper connection string not found");
-builder.Services.AddGraphHopperClient(graphHopperUrl);
+// Add GraphHopper client - uses Aspire service discovery (resolves "graphhopper" to the container endpoint)
+builder.Services.AddGraphHopperClient();
 
 var app = builder.Build();
 
@@ -25,8 +23,6 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
-
-string[] summaries = ["Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"];
 
 app.MapGet("/", () => "Waymarked API is running. POST to /api/routes to plan a route.");
 

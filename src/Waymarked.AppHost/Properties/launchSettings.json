@@ -12,7 +12,7 @@
         "ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL": "https://localhost:21262",
         "ASPIRE_DASHBOARD_MCP_ENDPOINT_URL": "https://localhost:23000",
         "ASPIRE_RESOURCE_SERVICE_ENDPOINT_URL": "https://localhost:22274",
-        "DCP_VERBOSITY": "debug"
+        "DCP_VERBOSITY": "info"
       }
     },
     "http": {
