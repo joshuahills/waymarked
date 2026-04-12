@@ -18,6 +18,24 @@
 
 ## Learnings
 
+### GraphHopper Dockerfile (Local Build) (2026-04-12)
+
+**Why no official image:**
+- GraphHopper does NOT publish to Docker Hub or GHCR; `graphhopper/graphhopper:latest` is a 404
+- Official distribution is via JAR on Maven Central; self-hosting means building your own image
+
+**Dockerfile approach:**
+- Base: `eclipse-temurin:21-jre` (GraphHopper 11.x requires Java 17+; 21 is current LTS)
+- JAR downloaded via `ADD` instruction from Maven Central at build time (no auth needed)
+- ENTRYPOINT uses `sh -c` with `exec` to allow `$JAVA_OPTS` expansion from environment variable
+- Pattern: `ENTRYPOINT ["sh", "-c", "exec java ${JAVA_OPTS} -jar ... \"$@\"", "sh"]` + `CMD ["--config", "..."]`
+- No `USER` instruction to avoid Podman user namespace conflicts
+
+**Aspire integration:**
+- `AddDockerfile(name, contextPath)` replaces `AddContainer(name, image)` when no prebuilt image exists
+- Aspire builds the image locally on first `aspire run`; subsequent runs use cached image
+- `contextPath` is relative to the AppHost project directory
+
 ### GraphHopper Docker Setup (2026-04-12)
 
 **Configuration Patterns:**
