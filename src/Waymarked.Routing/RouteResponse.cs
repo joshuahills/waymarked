@@ -54,4 +54,10 @@ public record RouteInstruction
     
     [JsonPropertyName("street_name")]
     public string? StreetName { get; init; }
+
+    [JsonPropertyName("sign")]
+    public int Sign { get; init; }
+
+    [JsonPropertyName("interval")]
+    public int[]? Interval { get; init; }
 }
