@@ -2,48 +2,42 @@
 # See: https://github.com/graphhopper/graphhopper/blob/master/config-example.yml
 
 graphhopper:
-  # Data location and processing
   datareader.file: /data/map.osm.pbf
   graph.location: /data/graph-cache
-  
-  # UK bounding box (rough) - speeds up processing
-  # Format: lat_min,lon_min,lat_max,lon_max
-  datareader.bounds: 49,-8,61,2
-  
-  # Routing profiles - foot (general walking) and hike (prefers hiking trails)
+
+  # Routing profiles using GH 11.x custom model format
   profiles:
     - name: foot
-      vehicle: foot
-      weighting: fastest
-      turn_costs: false
-      
+      custom_model_files: [foot.json, foot_elevation.json]
     - name: hike
-      vehicle: hike
-      weighting: fastest
-      turn_costs: false
-  
-  # Profile defaults
+      custom_model_files: [hike.json, foot_elevation.json]
+
   profiles_ch:
     - profile: foot
     - profile: hike
-  
-  # Elevation provider - SRTM auto-downloads from NASA servers
-  # Alternative: use OS Terrain 50 for better UK accuracy (requires manual setup)
+
+  profiles_lm: []
+
+  # Elevation: SRTM auto-downloads from NASA
   graph.elevation.provider: srtm
   graph.elevation.cache_dir: /data/elevation-cache
-  
-  # Enable elevation in responses
-  graph.encoded_values: road_class,road_environment,max_speed,road_access,surface,bike_network,foot_network
-  
-  # Web API settings
-  web.port: 8989
-  web.bind_host: 0.0.0.0
-  
-  # Routing tweaks
+
+  # Encoded values required by foot/hike profiles
+  graph.encoded_values: road_class, road_environment, road_access, surface, foot_network, hike_rating, foot_access, foot_priority, country, foot_road_access, mtb_rating, foot_average_speed, average_slope
+
   prepare.min_network_size: 200
-  prepare.min_one_way_network_size: 200
-  
-  # Routing instructions
-  routing.instructions: true
-  routing.calcpoints: true
-  routing.elevation: true
+  routing.non_ch.max_waypoint_distance: 1000000
+
+  # Don't exclude footways/paths — they are essential for walking/hiking routing
+  import.osm.ignored_highways: motorway,trunk
+
+# Dropwizard server config (GH 11.x moved web settings here)
+server:
+  application_connectors:
+  - type: http
+    port: 8989
+    bind_host: 0.0.0.0
+  admin_connectors:
+  - type: http
+    port: 8990
+    bind_host: 0.0.0.0
