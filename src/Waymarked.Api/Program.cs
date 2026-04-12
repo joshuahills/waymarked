@@ -79,7 +79,22 @@ app.MapPost("/api/routes", async (ApiRouteRequest apiRequest, GraphHopperClient 
         }
     }
 
-    // TODO: coordinate validation — Data (GIS) will add UK bounds checking here
+    // Validate coordinates are within Great Britain
+    if (!UkBoundsValidator.IsWithinBounds(apiRequest.From))
+    {
+        return Results.ValidationProblem(new Dictionary<string, string[]>
+        {
+            ["From"] = [UkBoundsValidator.GetOutOfBoundsMessage(apiRequest.From)]
+        });
+    }
+
+    if (apiRequest.To != null && !UkBoundsValidator.IsWithinBounds(apiRequest.To))
+    {
+        return Results.ValidationProblem(new Dictionary<string, string[]>
+        {
+            ["To"] = [UkBoundsValidator.GetOutOfBoundsMessage(apiRequest.To)]
+        });
+    }
 
     var request = new RouteRequest
     {
@@ -112,6 +127,14 @@ app.MapPost("/api/routes", async (ApiRouteRequest apiRequest, GraphHopperClient 
 })
 .WithName("PlanRoute")
 .WithOpenApi();
+
+app.MapGet("/api/bounds", () => Results.Ok(new
+{
+    minLat = 49.8,
+    maxLat = 60.9,
+    minLon = -8.7,
+    maxLon = 1.8
+})).WithName("GetBounds");
 
 app.MapDefaultEndpoints();
 
