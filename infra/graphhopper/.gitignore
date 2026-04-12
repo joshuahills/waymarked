@@ -1,0 +1,8 @@
+# GraphHopper data directory (OSM files, graph cache, elevation data)
+data/
+
+# Test output files
+test-route-response.json
+
+# Logs
+*.log

@@ -14,6 +14,53 @@ _(none yet — project just started)_
 
 ## Learnings
 
+### 2026-04-12: Documentation Update — GraphHopper Engine Alignment
+
+**Update:** Corrected `docs/osm-coverage-uk.md` to align with team's GraphHopper routing engine decision (see `.squad/decisions.md`). All Valhalla references replaced with GraphHopper equivalents:
+- Valhalla pedestrian costing → GraphHopper hiking profiles (hike.json)
+- Valhalla architecture → GraphHopper Java containerization (via Aspire)
+- Elevation integration (Valhalla Skadi) → GraphHopper DEM integration (OS Terrain 50)
+
+Documentation now accurate for Brand's .NET Aspire implementation and future backend integration.
+
+---
+
+### 2026-04-12: UK OSM Footpath Coverage Assessment (Valhalla Integration)
+
+**OSM Highway Tag Support in Valhalla:**
+- Valhalla pedestrian costing natively respects core tags: `highway=footway|path|bridleway|track|residential|tertiary`
+- Foot access overrides: `foot=yes|designated|permissive|no|private` all respected
+- UK PROW `designation` tags (public_footpath, public_bridleway, etc.) implied via `foot=designated`; Valhalla does NOT explicitly parse `designation` but application layer can use them for UI filtering
+
+**UK PROW Coverage Quality:**
+- England & Wales: ⭐⭐⭐⭐ (4/5) — ~40-60% of paths tagged with designation; excellent in Lake District/Peak District/South Downs; gaps in remote rural areas
+- Scotland: ⭐⭐⭐ (3/5) — ~30-40% fewer path segments than E&W; Right to Roam model means PROW tagging less critical; established routes well-mapped
+- MapThePaths project added ~60,000 PROW paths via conflation with 149 UK authorities; ongoing effort improving coverage
+
+**Valhalla Hiking Profile Specifics:**
+- NO native support for `sac_scale` (T1–T6 difficulty) — application layer must parse and warn users
+- NO native support for seasonal `access:conditional` tags — assumes permanent access
+- NO native support for round-trip routing — application must implement or use open-ended paths
+- Elevation integration via Skadi module: elevation sampling implicit; `use_hills` costing parameter controls hill avoidance (0-1, lower = avoid steep)
+- Custom costing parameters enable "footpaths only" mode: `use_roads: 0.3` deprioritises roads
+
+**Access Restrictions & Limitations:**
+- CRoW Act access land NOT routable as paths; workaround: store as GeoJSON zones, highlight on map
+- Seasonal closures (lambing, grouse, nesting) unmapped (<1% of UK paths); requires application-level database + partnership feeds
+- Permissive paths (`foot=permissive`) ~15-20% of rural UK; revokable at owner discretion; application should warn users
+- Scottish Right to Roam mapped de facto (open land has fewer paths, so fewer routable options); no special handling needed
+
+**Recommended Dev/Prod Data:**
+- **Dev:** Scotland extract (`scotland-latest.osm.pbf`, ~100 MB) — fast Valhalla build (~5 min), good elevation, established routes for sanity checks
+- **Prod:** Full GB extract (`great-britain-latest.osm.pbf`, ~1.5 GB) — comprehensive; Valhalla processes in 20-30 min, scales to modest VPS (4GB RAM, 20GB SSD)
+- Geofabrik URLs: Scotland = https://download.geofabrik.de/europe/scotland-latest.osm.pbf; GB = https://download.geofabrik.de/europe/great-britain-latest.osm.pbf
+
+**Key Findings:**
+- OSM sufficiently covers UK for walking app MVP & production
+- Valhalla pedestrian + OS Terrain 50 elevation = solid hiking routing
+- Major gaps: CRoW/access land routing, seasonal closures, difficulty tagging (sac_scale <5% present)
+- Application layer must handle: sac_scale parsing, seasonal closure warnings, permissive path caveats, round-trip algorithm
+
 ### 2026-04-12: UK Data Source Landscape Research
 
 **OpenStreetMap for Routing:**

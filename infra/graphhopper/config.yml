@@ -1,0 +1,49 @@
+# GraphHopper configuration for Waymarked UK hiking/walking routes
+# See: https://github.com/graphhopper/graphhopper/blob/master/config-example.yml
+
+graphhopper:
+  # Data location and processing
+  datareader.file: /data/map.osm.pbf
+  graph.location: /data/graph-cache
+  
+  # UK bounding box (rough) - speeds up processing
+  # Format: lat_min,lon_min,lat_max,lon_max
+  datareader.bounds: 49,-8,61,2
+  
+  # Routing profiles - foot (general walking) and hike (prefers hiking trails)
+  profiles:
+    - name: foot
+      vehicle: foot
+      weighting: fastest
+      turn_costs: false
+      
+    - name: hike
+      vehicle: hike
+      weighting: fastest
+      turn_costs: false
+  
+  # Profile defaults
+  profiles_ch:
+    - profile: foot
+    - profile: hike
+  
+  # Elevation provider - SRTM auto-downloads from NASA servers
+  # Alternative: use OS Terrain 50 for better UK accuracy (requires manual setup)
+  graph.elevation.provider: srtm
+  graph.elevation.cache_dir: /data/elevation-cache
+  
+  # Enable elevation in responses
+  graph.encoded_values: road_class,road_environment,max_speed,road_access,surface,bike_network,foot_network
+  
+  # Web API settings
+  web.port: 8989
+  web.bind_host: 0.0.0.0
+  
+  # Routing tweaks
+  prepare.min_network_size: 200
+  prepare.min_one_way_network_size: 200
+  
+  # Routing instructions
+  routing.instructions: true
+  routing.calcpoints: true
+  routing.elevation: true

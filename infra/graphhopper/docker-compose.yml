@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  graphhopper:
+    image: graphhopper/graphhopper:latest
+    container_name: waymarked-graphhopper
+    ports:
+      - "8989:8989"
+    volumes:
+      # OSM data and graph cache (persisted)
+      - ./data:/data
+      # GraphHopper config
+      - ./config.yml:/config.yml:ro
+    environment:
+      # Java heap settings - UK full extract needs 8-12GB, Scotland ~2-3GB
+      JAVA_OPTS: "-Xmx4g -Xms1g"
+    command: 
+      - "--input"
+      - "/data/map.osm.pbf"
+      - "--config"
+      - "/config.yml"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8989/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 300s  # Graph build can take several minutes
+
+networks:
+  default:
+    name: waymarked

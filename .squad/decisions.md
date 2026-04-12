@@ -55,6 +55,60 @@ GraphHopper is the optimal choice for UK walking/hiking/running route planning:
 
 ---
 
+### 2026-04-12: .NET Aspire Solution Architecture
+
+**Status:** IMPLEMENTED | **Owner:** Brand (Backend Dev)
+
+#### Decision: Scaffolded .NET Aspire solution with GraphHopper container resource
+
+**Architecture:**
+- **Solution:** `src/Waymarked.sln` (.NET 10, Aspire 13.1.0-preview.1)
+- **Projects:**
+  - `Waymarked.AppHost` — Aspire orchestrator
+  - `Waymarked.Api` — ASP.NET Core Web API
+  - `Waymarked.ServiceDefaults` — Shared Aspire service defaults
+  - `Waymarked.Routing` — GraphHopper client library
+
+**Namespace Convention:**
+- Root namespace: `Waymarked` (project-first, no company prefix)
+- Project suffixes: `.AppHost`, `.Api`, `.Routing`, `.ServiceDefaults`
+- API project: `Waymarked.Api` (no "Service" suffix)
+
+**GraphHopper Container Integration:**
+- AppHost adds GraphHopper container (`graphhopper/graphhopper`) with:
+  - Bind mount: config.yml (read-only) at `/data/config.yml`
+  - Bind mount: OSM data directory (read-write) at `/data`
+  - HTTP endpoint on port 8989
+  - Java options: `-Xmx2g -Xms2g`
+- API references GraphHopper via Aspire endpoint, waits for container readiness
+- Service discovery via connection string: `builder.Configuration.GetConnectionString("graphhopper")`
+
+**Routing Client Pattern:**
+- Separate `Waymarked.Routing` class library with strongly-typed `GraphHopperClient`
+- Request/response models: `RouteRequest`, `RouteResponse` with JSON mapping
+- DI extension method: `AddGraphHopperClient(baseAddress)` for registration
+- Minimal APIs endpoint: `POST /api/routes` with direct DI of `GraphHopperClient`
+
+**Key Benefits:**
+- Domain logic (routing) separated from API infrastructure ✅
+- GraphHopper implementation swappable without API changes ✅
+- Testable and reusable across services ✅
+- Modern .NET 10 patterns (minimal APIs, expression-bodied methods) ✅
+
+**Open Questions:**
+- Health check implementation for GraphHopper connectivity
+- Telemetry: custom metrics for route requests, failures, latency
+- Retry policy: Polly for transient failure handling
+- ServiceDefaults warning suppression (`ASPIRE004`)
+
+**Next Steps:**
+- Add OSM data download script/instructions
+- Implement health check for GraphHopper connectivity
+- Add integration tests for routing endpoint
+- Consider `Aspire.Hosting.Testing` for AppHost tests
+
+---
+
 ### 2026-04-12: Data Stack for UK Walking Route Planner
 
 **Status:** Ready for Review | **Owner:** Data (GIS Engineer)
