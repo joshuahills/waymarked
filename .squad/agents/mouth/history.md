@@ -46,3 +46,29 @@ _(none yet — project just started)_
 - Added web project to AppHost with `.WithReference(api).WaitFor(api)`
 - Added ProjectReference in AppHost.csproj
 - Used `AddServiceDefaults()` for observability/health checks
+
+### Collapsible Route Steps List (2026-12-04)
+
+**Decision:** Added collapsible steps toggle to stats panel for turn-by-turn route instructions
+
+**Key Files:**
+- `src/Waymarked.Web/wwwroot/index.html` — Added steps button and list container to stats panel
+- `src/Waymarked.Web/wwwroot/js/map.js` — Added DOM refs for stepsToggle and stepsList
+- `src/Waymarked.Web/wwwroot/js/route.js` — Added showSteps function, toggle handler, integrated with route display
+- `src/Waymarked.Web/wwwroot/css/app.css` — Added styling for toggle button and numbered steps list
+
+**UX Pattern:**
+- Toggle button hidden by default (only shows when route is loaded)
+- Starts collapsed ("▾ Show steps")
+- Filters out finish instruction (sign === 4)
+- Shows numbered instructions with inline distances
+- Distance formatting: <100m shows metres, ≥100m shows km with one decimal
+- Clean visual hierarchy: step number in earth-green, distance in muted grey, right-aligned
+
+**Implementation Details:**
+- hideStats() now clears steps state (toggle hidden, list empty, display none)
+- showSteps() called immediately after showStats() with data.instructions
+- Toggle switches between "▾ Show steps" and "▴ Hide steps"
+- CSS uses flexbox for step layout with auto-margin for distance alignment
+- Overrides global button::after arrow with empty content for toggle button
+
