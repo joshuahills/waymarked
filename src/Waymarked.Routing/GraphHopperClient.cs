@@ -19,7 +19,20 @@ public class GraphHopperClient(HttpClient httpClient, ILogger<GraphHopperClient>
         };
 
         var queryString = string.Join("&", queryParams.Select(kvp => $"{kvp.Key}={kvp.Value}"));
-        queryString += $"&point={request.To[0]},{request.To[1]}";
+        
+        if (request.To != null)
+        {
+            // A→B routing: add destination point
+            queryString += $"&point={request.To[0]},{request.To[1]}";
+        }
+        else
+        {
+            // Round-trip routing: use algorithm and distance
+            logger.LogInformation("Using round-trip routing mode with distance {Distance}m", request.Distance);
+            queryString += "&algorithm=round_trip";
+            queryString += $"&round_trip.distance={Convert.ToInt32(request.Distance)}";
+            queryString += $"&round_trip.seed={Random.Shared.Next()}";
+        }
 
         var requestUri = $"/route?{queryString}";
         
