@@ -449,6 +449,58 @@ button:disabled {
     cursor: crosshair !important;
 }
 
+/* ── Steps list ─────────────────────────────────────────────────────── */
+.steps-toggle {
+    width: 100%;
+    margin-top: 0.75rem;
+    padding: 0.5rem;
+    background: var(--clr-earth-lt);
+    color: var(--clr-earth);
+    border: 1px solid var(--clr-border);
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.15s;
+}
+.steps-toggle:hover {
+    background: #d4ecce;
+}
+/* Override global button ::after arrow */
+.steps-toggle::after { content: ''; }
+
+.steps-list {
+    list-style: none;
+    padding: 0;
+    margin-top: 0.5rem;
+}
+.steps-list li {
+    font-size: 0.82rem;
+    color: var(--clr-ink);
+    padding: 0.45rem 0;
+    border-bottom: 1px solid var(--clr-border);
+    display: flex;
+    gap: 0.3rem;
+    align-items: baseline;
+}
+.steps-list li:last-child {
+    border-bottom: none;
+}
+.steps-list li span:first-child {
+    color: var(--clr-earth);
+    font-weight: 600;
+    min-width: 1.5rem;
+    flex-shrink: 0;
+}
+.step-dist {
+    color: var(--clr-muted);
+    white-space: nowrap;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
 /* ── Responsive ─────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
     .container {

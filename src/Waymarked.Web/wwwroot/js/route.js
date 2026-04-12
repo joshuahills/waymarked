@@ -13,6 +13,13 @@ function updateFieldStates() {
 
 distanceInput.addEventListener('input', updateFieldStates);
 
+// ── Steps toggle event listener ──────────────────────────────────────
+stepsToggle.addEventListener('click', () => {
+    const open = stepsList.style.display !== 'none';
+    stepsList.style.display = open ? 'none' : 'block';
+    stepsToggle.textContent = open ? '▾ Show steps' : '▴ Hide steps';
+});
+
 // ── Error / stats helpers ────────────────────────────────────────────
 
 function showError(message) {
@@ -33,6 +40,25 @@ function showStats(distanceKm, distanceMiles, duration, instructions) {
 
 function hideStats() {
     statsDiv.classList.remove('visible');
+    stepsToggle.style.display = 'none';
+    stepsList.style.display = 'none';
+    stepsList.innerHTML = '';
+}
+
+function showSteps(instructions) {
+    stepsList.innerHTML = '';
+    const filtered = instructions.filter(i => i.sign !== 4);
+    filtered.forEach((inst, idx) => {
+        const dist = inst.distance < 100
+            ? `${Math.round(inst.distance)}m`
+            : `${(inst.distance / 1000).toFixed(1)}km`;
+        const li = document.createElement('li');
+        li.innerHTML = `<span>${idx + 1}.</span> ${inst.text} <span class="step-dist">— ${dist}</span>`;
+        stepsList.appendChild(li);
+    });
+    stepsToggle.style.display = 'block';
+    stepsToggle.textContent = '▾ Show steps';
+    stepsList.style.display = 'none';
 }
 
 // ── Form submission — reads hidden inputs, logic unchanged ───────────
@@ -123,6 +149,7 @@ form.addEventListener('submit', async e => {
 
         const instructionCount = data.instructions ? data.instructions.length : 0;
         showStats(data.distanceKm, data.distanceMiles, data.durationFormatted, instructionCount);
+        showSteps(data.instructions);
 
     } catch (error) {
         console.error('Route planning error:', error);
