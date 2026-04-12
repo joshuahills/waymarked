@@ -1,3 +1,4 @@
+using System.Text;
 using Waymarked.Routing;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -28,7 +29,92 @@ app.MapGet("/", () => "Waymarked API is running. POST to /api/routes to plan a r
 
 app.MapPost("/api/routes", async (ApiRouteRequest apiRequest, GraphHopperClient client) =>
 {
-    // Validate From
+    var validationResult = ValidateRouteRequest(apiRequest, out var distanceInMetres);
+    if (validationResult != null) return validationResult;
+
+    var request = BuildRouteRequest(apiRequest, distanceInMetres);
+    var routeResult = await ExecuteRouteAsync(client, request, apiRequest.To == null);
+    if (routeResult.Error != null) return routeResult.Error;
+
+    return Results.Ok(routeResult.Route);
+})
+.WithName("PlanRoute")
+.WithOpenApi();
+
+// ─── Export endpoints ────────────────────────────────────────────────────────
+
+app.MapPost("/api/routes/export/gpx", async (ApiRouteRequest apiRequest, GraphHopperClient client) =>
+{
+    var validationResult = ValidateRouteRequest(apiRequest, out var distanceInMetres);
+    if (validationResult != null) return validationResult;
+
+    var request = BuildRouteRequest(apiRequest, distanceInMetres);
+    var routeResult = await ExecuteRouteAsync(client, request, apiRequest.To == null);
+    if (routeResult.Error != null) return routeResult.Error;
+
+    var gpx = RouteExporter.BuildGpx(routeResult.Route!);
+    var bytes = Encoding.UTF8.GetBytes(gpx);
+    return Results.File(bytes, "application/gpx+xml", "waymarked-route.gpx");
+})
+.WithName("ExportGpx")
+.WithOpenApi();
+
+app.MapPost("/api/routes/export/kml", async (ApiRouteRequest apiRequest, GraphHopperClient client) =>
+{
+    var validationResult = ValidateRouteRequest(apiRequest, out var distanceInMetres);
+    if (validationResult != null) return validationResult;
+
+    var request = BuildRouteRequest(apiRequest, distanceInMetres);
+    var routeResult = await ExecuteRouteAsync(client, request, apiRequest.To == null);
+    if (routeResult.Error != null) return routeResult.Error;
+
+    var kml = RouteExporter.BuildKml(routeResult.Route!);
+    var bytes = Encoding.UTF8.GetBytes(kml);
+    return Results.File(bytes, "application/vnd.google-earth.kml+xml", "waymarked-route.kml");
+})
+.WithName("ExportKml")
+.WithOpenApi();
+
+app.MapPost("/api/routes/export/geojson", async (ApiRouteRequest apiRequest, GraphHopperClient client) =>
+{
+    var validationResult = ValidateRouteRequest(apiRequest, out var distanceInMetres);
+    if (validationResult != null) return validationResult;
+
+    var request = BuildRouteRequest(apiRequest, distanceInMetres);
+    var routeResult = await ExecuteRouteAsync(client, request, apiRequest.To == null);
+    if (routeResult.Error != null) return routeResult.Error;
+
+    var geoJson = RouteExporter.BuildGeoJson(routeResult.Route!);
+    var bytes = Encoding.UTF8.GetBytes(geoJson);
+    return Results.File(bytes, "application/geo+json", "waymarked-route.geojson");
+})
+.WithName("ExportGeoJson")
+.WithOpenApi();
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+app.MapGet("/api/bounds", () => Results.Ok(new
+{
+    minLat = 49.8,
+    maxLat = 60.9,
+    minLon = -8.7,
+    maxLon = 1.8
+})).WithName("GetBounds");
+
+app.MapDefaultEndpoints();
+
+app.Run();
+
+// ─── Shared helpers ──────────────────────────────────────────────────────────
+
+/// <summary>
+/// Validates the route request. Returns an IResult error if invalid, null if valid.
+/// Also outputs the pre-converted distance in metres (null for A→B routes).
+/// </summary>
+static IResult? ValidateRouteRequest(ApiRouteRequest apiRequest, out double? distanceInMetres)
+{
+    distanceInMetres = null;
+
     if (apiRequest.From == null || apiRequest.From.Length < 2)
     {
         return Results.ValidationProblem(new Dictionary<string, string[]>
@@ -37,7 +123,6 @@ app.MapPost("/api/routes", async (ApiRouteRequest apiRequest, GraphHopperClient 
         });
     }
 
-    // Validate round-trip requirements
     if (apiRequest.To == null && (apiRequest.Distance == null || apiRequest.Distance <= 0))
     {
         return Results.ValidationProblem(new Dictionary<string, string[]>
@@ -46,8 +131,6 @@ app.MapPost("/api/routes", async (ApiRouteRequest apiRequest, GraphHopperClient 
         });
     }
 
-    // Convert distance from km/miles to metres
-    double? distanceInMetres = null;
     if (apiRequest.Distance.HasValue)
     {
         var unit = apiRequest.DistanceUnit?.ToLowerInvariant() ?? "kilometres";
@@ -55,13 +138,9 @@ app.MapPost("/api/routes", async (ApiRouteRequest apiRequest, GraphHopperClient 
         {
             "miles" => apiRequest.Distance.Value * 1609.344,
             "kilometres" or "kilometers" => apiRequest.Distance.Value * 1000,
-            _ => apiRequest.Distance.Value * 1000 // default to kilometres
+            _ => apiRequest.Distance.Value * 1000
         };
-    }
 
-    // Validate distance bounds for round-trip routes
-    if (distanceInMetres.HasValue)
-    {
         if (distanceInMetres.Value < 500)
         {
             return Results.ValidationProblem(new Dictionary<string, string[]>
@@ -69,7 +148,7 @@ app.MapPost("/api/routes", async (ApiRouteRequest apiRequest, GraphHopperClient 
                 ["Distance"] = ["Distance must be at least 0.5 km (500 metres)"]
             });
         }
-        
+
         if (distanceInMetres.Value > 100000)
         {
             return Results.ValidationProblem(new Dictionary<string, string[]>
@@ -79,7 +158,6 @@ app.MapPost("/api/routes", async (ApiRouteRequest apiRequest, GraphHopperClient 
         }
     }
 
-    // Validate coordinates are within Great Britain
     if (!UkBoundsValidator.IsWithinBounds(apiRequest.From))
     {
         return Results.ValidationProblem(new Dictionary<string, string[]>
@@ -96,7 +174,11 @@ app.MapPost("/api/routes", async (ApiRouteRequest apiRequest, GraphHopperClient 
         });
     }
 
-    var request = new RouteRequest
+    return null;
+}
+
+static RouteRequest BuildRouteRequest(ApiRouteRequest apiRequest, double? distanceInMetres) =>
+    new()
     {
         From = apiRequest.From,
         To = apiRequest.To,
@@ -104,41 +186,30 @@ app.MapPost("/api/routes", async (ApiRouteRequest apiRequest, GraphHopperClient 
         Profile = apiRequest.Profile ?? "hike"
     };
 
+static async Task<(WaymarkedRouteResponse? Route, IResult? Error)> ExecuteRouteAsync(
+    GraphHopperClient client, RouteRequest request, bool isRoundTrip)
+{
     try
     {
         var response = await client.GetRouteAsync(request);
-        
-        if (response == null || response.Paths.Length == 0)
-        {
-            return Results.NotFound(new { error = "No route found" });
-        }
 
-        var waymarkedResponse = WaymarkedRouteResponse.FromRouteResponse(response, isRoundTrip: apiRequest.To == null);
-        return Results.Ok(waymarkedResponse);
+        if (response == null || response.Paths.Length == 0)
+            return (null, Results.NotFound(new { error = "No route found" }));
+
+        var route = WaymarkedRouteResponse.FromRouteResponse(response, isRoundTrip);
+        return (route, null);
     }
     catch (HttpRequestException ex)
     {
-        return Results.Problem(
+        return (null, Results.Problem(
             detail: ex.Message,
             statusCode: StatusCodes.Status502BadGateway,
             title: "Failed to communicate with routing engine"
-        );
+        ));
     }
-})
-.WithName("PlanRoute")
-.WithOpenApi();
+}
 
-app.MapGet("/api/bounds", () => Results.Ok(new
-{
-    minLat = 49.8,
-    maxLat = 60.9,
-    minLon = -8.7,
-    maxLon = 1.8
-})).WithName("GetBounds");
-
-app.MapDefaultEndpoints();
-
-app.Run();
+// ─────────────────────────────────────────────────────────────────────────────
 
 record ApiRouteRequest(
     double[] From,

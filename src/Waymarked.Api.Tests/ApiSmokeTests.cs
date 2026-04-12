@@ -182,4 +182,55 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
+
+    [Fact]
+    public async Task Post_ExportGpx_Returns200WithGpxContentType()
+    {
+        var payload = new
+        {
+            from = new[] { 54.5994, -3.1367 },
+            distance = 5.0,
+            distanceUnit = "kilometres",
+            profile = "foot"
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/routes/export/gpx", payload);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Content.Headers.ContentType!.MediaType.Should().Contain("gpx");
+    }
+
+    [Fact]
+    public async Task Post_ExportKml_Returns200WithKmlContentType()
+    {
+        var payload = new
+        {
+            from = new[] { 54.5994, -3.1367 },
+            distance = 5.0,
+            distanceUnit = "kilometres",
+            profile = "foot"
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/routes/export/kml", payload);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Content.Headers.ContentType!.MediaType.Should().Contain("kml");
+    }
+
+    [Fact]
+    public async Task Post_ExportGeoJson_Returns200WithGeoJsonContentType()
+    {
+        var payload = new
+        {
+            from = new[] { 54.5994, -3.1367 },
+            distance = 5.0,
+            distanceUnit = "kilometres",
+            profile = "foot"
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/routes/export/geojson", payload);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Content.Headers.ContentType!.MediaType.Should().Contain("geo+json");
+    }
 }
