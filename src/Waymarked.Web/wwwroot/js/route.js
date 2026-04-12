@@ -168,11 +168,9 @@ form.addEventListener('submit', async e => {
 
 // ── Export download handler ──────────────────────────────────────────
 
-async function exportRoute(format) {
+async function exportRoute(format, btn) {
     if (!lastRouteRequest) return;
 
-    const btnId = `export${format.charAt(0).toUpperCase() + format.slice(1)}`;
-    const btn = document.getElementById(btnId);
     const originalText = btn.textContent;
     btn.disabled = true;
     btn.textContent = '…';
@@ -203,6 +201,6 @@ async function exportRoute(format) {
     }
 }
 
-exportGpx.addEventListener('click',     () => exportRoute('gpx'));
-exportKml.addEventListener('click',     () => exportRoute('kml'));
-exportGeoJson.addEventListener('click', () => exportRoute('geojson'));
+exportGpx.addEventListener('click',     () => exportRoute('gpx',     exportGpx));
+exportKml.addEventListener('click',     () => exportRoute('kml',     exportKml));
+exportGeoJson.addEventListener('click', () => exportRoute('geojson', exportGeoJson));
