@@ -2,23 +2,18 @@ version: '3.8'
 
 services:
   graphhopper:
-    image: graphhopper/graphhopper:latest
+    build: .
     container_name: waymarked-graphhopper
     ports:
       - "8989:8989"
     volumes:
       # OSM data and graph cache (persisted)
       - ./data:/data
-      # GraphHopper config
-      - ./config.yml:/config.yml:ro
+      # GraphHopper config mounted at the path CMD expects
+      - ./config.yml:/data/config.yml:ro
     environment:
       # Java heap settings - UK full extract needs 8-12GB, Scotland ~2-3GB
       JAVA_OPTS: "-Xmx4g -Xms1g"
-    command: 
-      - "--input"
-      - "/data/map.osm.pbf"
-      - "--config"
-      - "/config.yml"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8989/health"]

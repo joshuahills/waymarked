@@ -5,3 +5,12 @@
 .squad/sessions/
 # Squad: SubSquad activation file (local to this machine)
 .squad-workstream
+
+# .NET build output
+src/**/bin/
+src/**/obj/
+
+# Visual Studio
+src/.vs/
+*.user
+*.suo
