@@ -221,4 +221,134 @@ public class RouteJourneyTests : IClassFixture<AspireFixture>
             playwright.Dispose();
         }
     }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Test 6 — Collapsible steps list: toggle show / hide
+    // ──────────────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task StepsToggle_ShowsAndHidesInstructions()
+    {
+        var (playwright, browser, page) = await OpenAppAsync();
+        try
+        {
+            // Inject Keswick coordinates directly — avoids the autocomplete network call
+            await page.EvalOnSelectorAsync("#startLat", "el => el.value = '54.5994'");
+            await page.EvalOnSelectorAsync("#startLon", "el => el.value = '-3.1367'");
+            await page.FillAsync("#startSearch", "Keswick");
+
+            await page.FillAsync("#distance", "5");
+
+            // Plan the route
+            await page.ClickAsync("#planButton");
+
+            // Wait for the stats panel to become visible (real GH call — allow 30 s)
+            await page.WaitForSelectorAsync("#stats",
+                new PageWaitForSelectorOptions
+                {
+                    State   = WaitForSelectorState.Visible,
+                    Timeout = 30_000
+                });
+
+            // Toggle button must be visible; steps list must start hidden
+            var stepsToggle = page.Locator("#stepsToggle");
+            var stepsList   = page.Locator("#stepsList");
+
+            (await stepsToggle.IsVisibleAsync()).Should().BeTrue(
+                "#stepsToggle should be visible after a route is planned");
+
+            (await stepsList.IsHiddenAsync()).Should().BeTrue(
+                "#stepsList should be hidden by default before the toggle is clicked");
+
+            // First click — expand
+            await stepsToggle.ClickAsync();
+
+            (await stepsList.IsVisibleAsync()).Should().BeTrue(
+                "#stepsList should be visible after clicking #stepsToggle");
+
+            var liCount = await page.Locator("#stepsList li").CountAsync();
+            liCount.Should().BeGreaterThan(0,
+                "#stepsList should contain at least one instruction list item");
+
+            // Second click — collapse again
+            await stepsToggle.ClickAsync();
+
+            (await stepsList.IsHiddenAsync()).Should().BeTrue(
+                "#stepsList should be hidden again after clicking #stepsToggle a second time");
+        }
+        finally
+        {
+            await browser.CloseAsync();
+            playwright.Dispose();
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Test 7 — Export section appears after a route is planned
+    // ──────────────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task ExportSection_AppearsAfterRoutePlanned()
+    {
+        var (playwright, browser, page) = await OpenAppAsync();
+        try
+        {
+            // Inject Keswick coordinates and plan a round trip
+            await page.EvalOnSelectorAsync("#startLat", "el => el.value = '54.5994'");
+            await page.EvalOnSelectorAsync("#startLon", "el => el.value = '-3.1367'");
+            await page.FillAsync("#startSearch", "Keswick");
+
+            await page.FillAsync("#distance", "5");
+
+            await page.ClickAsync("#planButton");
+
+            // Wait for stats to confirm the route was received (allow 30 s)
+            await page.WaitForSelectorAsync("#stats",
+                new PageWaitForSelectorOptions
+                {
+                    State   = WaitForSelectorState.Visible,
+                    Timeout = 30_000
+                });
+
+            // The entire export section must now be visible
+            (await page.Locator("#exportSection").IsVisibleAsync()).Should().BeTrue(
+                "#exportSection should appear after a route is planned");
+
+            // Each download button must be individually visible
+            (await page.Locator("#exportGpx").IsVisibleAsync()).Should().BeTrue(
+                "#exportGpx button should be visible");
+
+            (await page.Locator("#exportKml").IsVisibleAsync()).Should().BeTrue(
+                "#exportKml button should be visible");
+
+            (await page.Locator("#exportGeoJson").IsVisibleAsync()).Should().BeTrue(
+                "#exportGeoJson button should be visible");
+        }
+        finally
+        {
+            await browser.CloseAsync();
+            playwright.Dispose();
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Test 8 — Export section is hidden before any route is planned
+    // ──────────────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task ExportSection_HiddenBeforeRoutePlanned()
+    {
+        var (playwright, browser, page) = await OpenAppAsync();
+        try
+        {
+            // Navigate but do NOT plan a route
+            (await page.Locator("#exportSection").IsHiddenAsync()).Should().BeTrue(
+                "#exportSection should not be visible before a route has been planned");
+        }
+        finally
+        {
+            await browser.CloseAsync();
+            playwright.Dispose();
+        }
+    }
 }

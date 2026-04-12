@@ -70,7 +70,9 @@ internal class StubGraphHopperHandler : DelegatingHandler
                         Distance = 100,
                         Time = 72000,
                         Text = "Head north",
-                        StreetName = "High Street"
+                        StreetName = "High Street",
+                        Sign = 2,
+                        Interval = [0, 1]
                     }
                 ]
             }

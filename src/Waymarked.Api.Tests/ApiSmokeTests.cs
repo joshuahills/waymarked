@@ -233,4 +233,155 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Content.Headers.ContentType!.MediaType.Should().Contain("geo+json");
     }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Export content-validation tests (expand the smoke tests above)
+    // ──────────────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Post_ExportGpx_ContainsValidGpxStructure()
+    {
+        var payload = new
+        {
+            from = new[] { 54.5994, -3.1367 },
+            distance = 5.0,
+            distanceUnit = "kilometres",
+            profile = "foot"
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/routes/export/gpx", payload);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var body = await response.Content.ReadAsStringAsync();
+
+        body.Should().Contain("<gpx",       "GPX files must start with a <gpx root element");
+        body.Should().Contain("<trk>",      "GPX files must contain a track element");
+        body.Should().Contain("<trkpt",     "GPX files must contain track-point elements");
+        body.Should().Contain("lat=",       "track points must carry a lat attribute");
+        body.Should().Contain("lon=",       "track points must carry a lon attribute");
+    }
+
+    [Fact]
+    public async Task Post_ExportKml_ContainsValidKmlStructure()
+    {
+        var payload = new
+        {
+            from = new[] { 54.5994, -3.1367 },
+            distance = 5.0,
+            distanceUnit = "kilometres",
+            profile = "foot"
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/routes/export/kml", payload);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var body = await response.Content.ReadAsStringAsync();
+
+        body.Should().Contain("<kml",          "KML files must have a <kml root element");
+        body.Should().Contain("<LineString>",  "KML route must be represented as a LineString");
+        body.Should().Contain("<coordinates>", "KML LineString must contain a <coordinates> element");
+    }
+
+    [Fact]
+    public async Task Post_ExportGeoJson_ContainsValidGeoJsonStructure()
+    {
+        var payload = new
+        {
+            from = new[] { 54.5994, -3.1367 },
+            distance = 5.0,
+            distanceUnit = "kilometres",
+            profile = "foot"
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/routes/export/geojson", payload);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var body = await response.Content.ReadAsStringAsync();
+
+        // Accept both compact and indented JSON
+        body.Should().MatchRegex("\"type\"\\s*:\\s*\"FeatureCollection\"",
+            "top-level type must be FeatureCollection");
+        body.Should().Contain("\"LineString\"",
+            "geometry type must be LineString");
+        body.Should().Contain("distanceKm",
+            "properties must include distanceKm");
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Sign + Interval in instructions
+    // ──────────────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Post_ApiRoutes_ResponseIncludesSignAndIntervalInInstructions()
+    {
+        var payload = new
+        {
+            from = new[] { 54.5994, -3.1367 },
+            distance = 5.0,
+            distanceUnit = "kilometres",
+            profile = "foot"
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/routes", payload);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var json = await response.Content.ReadAsStringAsync();
+
+        // Deserialise using case-insensitive matching (API returns camelCase,
+        // RouteInstruction uses [JsonPropertyName] attributes)
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        var routeResponse = JsonSerializer.Deserialize<WaymarkedRouteResponse>(json, options);
+
+        routeResponse.Should().NotBeNull();
+        routeResponse!.Instructions.Should().NotBeNullOrEmpty("the stub returns one instruction");
+
+        var first = routeResponse.Instructions![0];
+
+        // Stub sets Sign = 2
+        first.Sign.Should().Be(2, "the stub sets Sign = 2 on the first instruction");
+
+        // Stub sets Interval = [0, 1]
+        first.Interval.Should().NotBeNull("the stub sets Interval on the first instruction");
+        first.Interval!.Should().HaveCount(2, "Interval must be a two-element [start, end] array");
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Export endpoint validation — same rules apply as /api/routes
+    // ──────────────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Post_ExportGpx_FromOutsideGreatBritain_Returns400()
+    {
+        // Paris coords (lat=48.8566, lon=2.3522) — outside GB bounds
+        var payload = new
+        {
+            from = new[] { 48.8566, 2.3522 },
+            distance = 5.0,
+            distanceUnit = "kilometres",
+            profile = "foot"
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/routes/export/gpx", payload);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest,
+            "GPX export must reject coordinates outside Great Britain");
+    }
+
+    [Fact]
+    public async Task Post_ExportGpx_DistanceTooLarge_Returns400()
+    {
+        // 200 km is above the 100 km maximum
+        var payload = new
+        {
+            from = new[] { 54.5994, -3.1367 },
+            distance = 200.0,
+            distanceUnit = "kilometres",
+            profile = "foot"
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/routes/export/gpx", payload);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest,
+            "GPX export must reject distances exceeding 100 km");
+    }
 }
