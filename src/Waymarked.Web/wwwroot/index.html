@@ -11,32 +11,32 @@
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             height: 100vh;
             display: flex;
             flex-direction: column;
         }
-        
+
         header {
             background: #1a1a1a;
             color: white;
             padding: 1rem 1.5rem;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        
+
         header h1 {
             font-size: 1.5rem;
             font-weight: 600;
         }
-        
+
         .container {
             display: flex;
             flex: 1;
             overflow: hidden;
         }
-        
+
         .sidebar {
             width: 350px;
             background: #f8f9fa;
@@ -44,11 +44,11 @@
             overflow-y: auto;
             border-right: 1px solid #dee2e6;
         }
-        
+
         .form-group {
             margin-bottom: 1.25rem;
         }
-        
+
         .form-group label {
             display: block;
             margin-bottom: 0.5rem;
@@ -56,13 +56,7 @@
             color: #495057;
             font-size: 0.9rem;
         }
-        
-        .coord-inputs {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0.5rem;
-        }
-        
+
         input[type="number"],
         select {
             width: 100%;
@@ -71,14 +65,14 @@
             border-radius: 4px;
             font-size: 0.95rem;
         }
-        
+
         input[type="number"]:focus,
         select:focus {
             outline: none;
             border-color: #007bff;
             box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
         }
-        
+
         button {
             width: 100%;
             padding: 0.75rem;
@@ -91,20 +85,20 @@
             cursor: pointer;
             transition: background 0.2s;
         }
-        
+
         button:hover {
             background: #0056b3;
         }
-        
+
         button:active {
             background: #004085;
         }
-        
+
         button:disabled {
             background: #6c757d;
             cursor: not-allowed;
         }
-        
+
         .stats {
             margin-top: 1.5rem;
             padding: 1rem;
@@ -113,38 +107,38 @@
             border: 1px solid #dee2e6;
             display: none;
         }
-        
+
         .stats.visible {
             display: block;
         }
-        
+
         .stats h3 {
             font-size: 1rem;
             margin-bottom: 0.75rem;
             color: #1a1a1a;
         }
-        
+
         .stat-row {
             display: flex;
             justify-content: space-between;
             padding: 0.4rem 0;
             border-bottom: 1px solid #f1f3f5;
         }
-        
+
         .stat-row:last-child {
             border-bottom: none;
         }
-        
+
         .stat-label {
             color: #6c757d;
             font-size: 0.9rem;
         }
-        
+
         .stat-value {
             font-weight: 500;
             color: #212529;
         }
-        
+
         .error {
             margin-top: 1rem;
             padding: 0.75rem;
@@ -155,28 +149,28 @@
             font-size: 0.9rem;
             display: none;
         }
-        
+
         .error.visible {
             display: block;
         }
-        
+
         #map {
             flex: 1;
             background: #e9ecef;
         }
-        
+
         .helper-text {
             font-size: 0.85rem;
             color: #6c757d;
             margin-top: 0.25rem;
         }
-        
+
         .distance-inputs {
             display: grid;
             grid-template-columns: 2fr 1fr;
             gap: 0.5rem;
         }
-        
+
         input[type="number"]:disabled,
         select:disabled {
             background: #e9ecef;
@@ -184,12 +178,175 @@
             cursor: not-allowed;
             border-color: #dee2e6;
         }
-        
+
+        /* ── Place search ─────────────────────────────────────────────────── */
+
+        .search-wrapper {
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.6rem;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            background: white;
+            color: #212529;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+        }
+
+        .search-input:disabled {
+            background: #e9ecef;
+            color: #adb5bd;
+            cursor: not-allowed;
+            border-color: #dee2e6;
+        }
+
+        .search-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ced4da;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            max-height: 210px;
+            overflow-y: auto;
+            z-index: 9999;
+            display: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+        }
+
+        .search-dropdown.visible {
+            display: block;
+        }
+
+        .search-dropdown-item {
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+            font-size: 0.82rem;
+            line-height: 1.35;
+            border-bottom: 1px solid #f1f3f5;
+            color: #212529;
+        }
+
+        .search-dropdown-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-dropdown-item:hover {
+            background: #e8f4fd;
+        }
+
+        .search-dropdown-item.no-results {
+            color: #6c757d;
+            cursor: default;
+        }
+
+        .search-dropdown-item.no-results:hover {
+            background: white;
+        }
+
+        /* ── Map-click mode toggle ────────────────────────────────────────── */
+
+        .map-mode-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .map-mode-group > span {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #495057;
+            font-size: 0.9rem;
+        }
+
+        .map-mode-toggle {
+            display: flex;
+            gap: 0.4rem;
+        }
+
+        /* Mode buttons override the global button styles */
+        .mode-btn {
+            flex: 1;
+            width: auto;               /* override button { width: 100% } */
+            padding: 0.45rem 0.35rem;
+            font-size: 0.8rem;
+            background: white;
+            color: #495057;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            font-family: inherit;
+            transition: background 0.15s, border-color 0.15s, color 0.15s;
+        }
+
+        .mode-btn:hover {
+            background: #f0f0f0;
+            border-color: #adb5bd;
+            color: #212529;
+        }
+
+        .mode-btn:active {
+            background: #e2e6ea;
+        }
+
+        .mode-btn.active-start {
+            background: #28a745;
+            color: white;
+            border-color: #28a745;
+        }
+
+        .mode-btn.active-start:hover {
+            background: #218838;
+            border-color: #218838;
+            color: white;
+        }
+
+        .mode-btn.active-end {
+            background: #dc3545;
+            color: white;
+            border-color: #dc3545;
+        }
+
+        .mode-btn.active-end:hover {
+            background: #c82333;
+            border-color: #c82333;
+            color: white;
+        }
+
+        .mode-btn.active-off {
+            background: #6c757d;
+            color: white;
+            border-color: #6c757d;
+        }
+
+        .mode-btn.active-off:hover {
+            background: #5a6268;
+            border-color: #5a6268;
+            color: white;
+        }
+
+        /* Crosshair cursor on map when a mode is active */
+        #map.click-mode-start,
+        #map.click-mode-end {
+            cursor: crosshair !important;
+        }
+
         @media (max-width: 768px) {
             .container {
                 flex-direction: column;
             }
-            
+
             .sidebar {
                 width: 100%;
                 max-height: 50vh;
@@ -201,28 +358,51 @@
     <header>
         <h1>Waymarked</h1>
     </header>
-    
+
     <div class="container">
         <div class="sidebar">
             <form id="routeForm">
+
+                <!-- Start Point — place search replaces number inputs -->
                 <div class="form-group">
-                    <label for="startLat">Start Point</label>
-                    <div class="coord-inputs">
-                        <input type="number" id="startLat" step="0.0001" placeholder="Latitude" required>
-                        <input type="number" id="startLon" step="0.0001" placeholder="Longitude" required>
+                    <label for="startSearch">Start Point</label>
+                    <div class="search-wrapper">
+                        <input type="text" id="startSearch" class="search-input"
+                               placeholder="Search place, postcode or address…"
+                               autocomplete="off" spellcheck="false">
+                        <div class="search-dropdown" id="startDropdown"></div>
                     </div>
-                    <div class="helper-text">e.g., 54.9783, -1.6178 (Newcastle)</div>
+                    <!-- Hidden coords read by the submit handler (unchanged contract) -->
+                    <input type="hidden" id="startLat">
+                    <input type="hidden" id="startLon">
+                    <div class="helper-text">e.g. "Keswick", "LA22 9QU", "Scafell Pike"</div>
                 </div>
-                
+
+                <!-- End Point — place search replaces number inputs -->
                 <div class="form-group">
-                    <label for="endLat">End Point (optional)</label>
-                    <div class="coord-inputs">
-                        <input type="number" id="endLat" step="0.0001" placeholder="Latitude">
-                        <input type="number" id="endLon" step="0.0001" placeholder="Longitude">
+                    <label for="endSearch">End Point <span style="font-weight:400;color:#6c757d;">(optional)</span></label>
+                    <div class="search-wrapper">
+                        <input type="text" id="endSearch" class="search-input"
+                               placeholder="Search place, postcode or address…"
+                               autocomplete="off" spellcheck="false">
+                        <div class="search-dropdown" id="endDropdown"></div>
                     </div>
+                    <!-- Hidden coords read by the submit handler (unchanged contract) -->
+                    <input type="hidden" id="endLat">
+                    <input type="hidden" id="endLon">
                     <div class="helper-text">Leave blank for round trip</div>
                 </div>
-                
+
+                <!-- Map-click mode toggle -->
+                <div class="map-mode-group">
+                    <span>Click map to place point</span>
+                    <div class="map-mode-toggle">
+                        <button type="button" class="mode-btn" id="modeStartBtn">📍 Set Start</button>
+                        <button type="button" class="mode-btn" id="modeEndBtn">📍 Set End</button>
+                        <button type="button" class="mode-btn active-off" id="modeOffBtn">✕ Off</button>
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label for="distance">Distance (round trip only)</label>
                     <div class="distance-inputs">
@@ -234,7 +414,7 @@
                     </div>
                     <div class="helper-text">Required when no end point is set</div>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="profile">Route Profile</label>
                     <select id="profile" required>
@@ -242,12 +422,12 @@
                         <option value="hike">Hiking</option>
                     </select>
                 </div>
-                
+
                 <button type="submit" id="planButton">Plan Route</button>
             </form>
-            
+
             <div id="error" class="error"></div>
-            
+
             <div id="stats" class="stats">
                 <h3>Route Summary</h3>
                 <div class="stat-row">
@@ -264,86 +444,365 @@
                 </div>
             </div>
         </div>
-        
+
         <div id="map"></div>
     </div>
-    
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // Initialize map centered on UK
+        // ── Map initialisation ──────────────────────────────────────────────
         const map = L.map('map').setView([54.0, -2.0], 6);
-        
-        // Add OpenTopoMap tiles
+
         L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
             maxZoom: 17,
             attribution: 'Map data: © OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap'
         }).addTo(map);
-        
+
         let routeLayer = null;
-        
-        const form = document.getElementById('routeForm');
-        const planButton = document.getElementById('planButton');
-        const errorDiv = document.getElementById('error');
-        const statsDiv = document.getElementById('stats');
-        
-        const endLatInput = document.getElementById('endLat');
-        const endLonInput = document.getElementById('endLon');
-        const distanceInput = document.getElementById('distance');
+
+        // ── DOM refs ────────────────────────────────────────────────────────
+        const form              = document.getElementById('routeForm');
+        const planButton        = document.getElementById('planButton');
+        const errorDiv          = document.getElementById('error');
+        const statsDiv          = document.getElementById('stats');
+
+        const startSearch       = document.getElementById('startSearch');
+        const startDropdown     = document.getElementById('startDropdown');
+        const startLatInput     = document.getElementById('startLat');
+        const startLonInput     = document.getElementById('startLon');
+
+        const endSearch         = document.getElementById('endSearch');
+        const endDropdown       = document.getElementById('endDropdown');
+        const endLatInput       = document.getElementById('endLat');
+        const endLonInput       = document.getElementById('endLon');
+
+        const distanceInput     = document.getElementById('distance');
         const distanceUnitInput = document.getElementById('distanceUnit');
-        
-        function updateFieldStates() {
-            const endFilled = endLatInput.value.trim() !== '' || endLonInput.value.trim() !== '';
-            const distFilled = distanceInput.value.trim() !== '' && parseFloat(distanceInput.value) > 0;
-            
-            // If end point has values, disable distance; if distance has a value, disable end point
-            endLatInput.disabled = !endFilled && distFilled;
-            endLonInput.disabled = !endFilled && distFilled;
-            distanceInput.disabled = endFilled;
-            distanceUnitInput.disabled = endFilled;
+
+        const modeStartBtn      = document.getElementById('modeStartBtn');
+        const modeEndBtn        = document.getElementById('modeEndBtn');
+        const modeOffBtn        = document.getElementById('modeOffBtn');
+        const mapEl             = document.getElementById('map');
+
+        // ── Marker state ────────────────────────────────────────────────────
+        let startMarker = null;
+        let endMarker   = null;
+        let clickMode   = 'off'; // 'start' | 'end' | 'off'
+
+        // Pin-shaped DivIcon — colour + single letter label
+        function createMarkerIcon(color, letter) {
+            return L.divIcon({
+                className: '',
+                html: `<div style="
+                    width:28px;height:34px;
+                    background:${color};
+                    border:2px solid rgba(255,255,255,0.9);
+                    border-radius:50% 50% 50% 0;
+                    transform:rotate(-45deg);
+                    box-shadow:0 2px 6px rgba(0,0,0,0.35);
+                    display:flex;align-items:center;justify-content:center;
+                "><span style="
+                    transform:rotate(45deg);
+                    color:white;font-size:12px;font-weight:700;line-height:1;
+                ">${letter}</span></div>`,
+                iconSize:    [28, 34],
+                iconAnchor:  [14, 34],
+                popupAnchor: [0, -36]
+            });
         }
-        
-        [endLatInput, endLonInput].forEach(el => el.addEventListener('input', updateFieldStates));
+
+        // ── Nominatim helpers ───────────────────────────────────────────────
+        const NOM_HEADERS = { 'User-Agent': 'Waymarked/1.0' };
+
+        async function geocode(query) {
+            const url = `https://nominatim.openstreetmap.org/search?format=json&countrycodes=gb&limit=5&q=${encodeURIComponent(query)}`;
+            const res = await fetch(url, { headers: NOM_HEADERS });
+            if (!res.ok) throw new Error('Geocoding request failed');
+            return res.json();
+        }
+
+        async function reverseGeocode(lat, lon) {
+            const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`;
+            const res = await fetch(url, { headers: NOM_HEADERS });
+            if (!res.ok) throw new Error('Reverse geocoding request failed');
+            return res.json();
+        }
+
+        function debounce(fn, delay) {
+            let timer;
+            return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), delay); };
+        }
+
+        // ── Point setters ───────────────────────────────────────────────────
+
+        function setStartPoint(lat, lon, name) {
+            startLatInput.value = lat;
+            startLonInput.value = lon;
+            startSearch.value   = name;
+            closeDropdown(startDropdown);
+
+            if (startMarker) map.removeLayer(startMarker);
+            startMarker = L.marker([lat, lon], {
+                icon: createMarkerIcon('#28a745', 'S'),
+                draggable: true
+            }).addTo(map);
+
+            startMarker.on('dragend', async () => {
+                const { lat: newLat, lng: newLon } = startMarker.getLatLng();
+                startLatInput.value = newLat;
+                startLonInput.value = newLon;
+                try {
+                    const result = await reverseGeocode(newLat, newLon);
+                    startSearch.value = result.display_name || coordLabel(newLat, newLon);
+                } catch {
+                    startSearch.value = coordLabel(newLat, newLon);
+                }
+                updateFieldStates();
+            });
+
+            updateFieldStates();
+        }
+
+        function clearStartPoint() {
+            startLatInput.value = '';
+            startLonInput.value = '';
+            if (startMarker) { map.removeLayer(startMarker); startMarker = null; }
+            updateFieldStates();
+        }
+
+        function setEndPoint(lat, lon, name) {
+            endLatInput.value = lat;
+            endLonInput.value = lon;
+            endSearch.value   = name;
+            closeDropdown(endDropdown);
+
+            if (endMarker) map.removeLayer(endMarker);
+            endMarker = L.marker([lat, lon], {
+                icon: createMarkerIcon('#dc3545', 'E'),
+                draggable: true
+            }).addTo(map);
+
+            endMarker.on('dragend', async () => {
+                const { lat: newLat, lng: newLon } = endMarker.getLatLng();
+                endLatInput.value = newLat;
+                endLonInput.value = newLon;
+                try {
+                    const result = await reverseGeocode(newLat, newLon);
+                    endSearch.value = result.display_name || coordLabel(newLat, newLon);
+                } catch {
+                    endSearch.value = coordLabel(newLat, newLon);
+                }
+                updateFieldStates();
+            });
+
+            updateFieldStates();
+        }
+
+        function clearEndPoint() {
+            endLatInput.value = '';
+            endLonInput.value = '';
+            endSearch.value   = '';
+            if (endMarker) { map.removeLayer(endMarker); endMarker = null; }
+            updateFieldStates();
+        }
+
+        function coordLabel(lat, lon) {
+            return `${parseFloat(lat).toFixed(5)}, ${parseFloat(lon).toFixed(5)}`;
+        }
+
+        // ── Dropdown helpers ────────────────────────────────────────────────
+
+        function closeDropdown(dropdown) {
+            dropdown.classList.remove('visible');
+            dropdown.innerHTML = '';
+        }
+
+        function showDropdown(dropdown, results, onSelect) {
+            dropdown.innerHTML = '';
+            if (!results.length) {
+                const item = document.createElement('div');
+                item.className = 'search-dropdown-item no-results';
+                item.textContent = 'No results found';
+                dropdown.appendChild(item);
+            } else {
+                results.forEach(r => {
+                    const item = document.createElement('div');
+                    item.className = 'search-dropdown-item';
+                    item.textContent = r.display_name;
+                    // mousedown fires before blur, preventing the dropdown from
+                    // disappearing before the click is registered
+                    item.addEventListener('mousedown', e => {
+                        e.preventDefault();
+                        onSelect(parseFloat(r.lat), parseFloat(r.lon), r.display_name);
+                    });
+                    dropdown.appendChild(item);
+                });
+            }
+            dropdown.classList.add('visible');
+        }
+
+        // ── Search box wiring ───────────────────────────────────────────────
+
+        function setupSearch(searchInput, dropdown, latInput, lonInput, removeMarkerFn, setPointFn) {
+            const debouncedSearch = debounce(async query => {
+                try {
+                    const results = await geocode(query);
+                    showDropdown(dropdown, results, setPointFn);
+                } catch {
+                    closeDropdown(dropdown);
+                }
+            }, 400);
+
+            searchInput.addEventListener('input', () => {
+                const val = searchInput.value.trim();
+
+                // Coords are stale the moment the user edits the text — clear them
+                latInput.value = '';
+                lonInput.value = '';
+
+                if (!val) {
+                    removeMarkerFn();
+                    closeDropdown(dropdown);
+                } else {
+                    debouncedSearch(val);
+                }
+                updateFieldStates();
+            });
+
+            // Hide dropdown on blur; brief delay lets mousedown on items fire first
+            searchInput.addEventListener('blur', () => {
+                setTimeout(() => closeDropdown(dropdown), 160);
+            });
+
+            // Re-show dropdown on re-focus if results are still there
+            searchInput.addEventListener('focus', () => {
+                if (dropdown.children.length) dropdown.classList.add('visible');
+            });
+        }
+
+        function removeStartMarker() {
+            if (startMarker) { map.removeLayer(startMarker); startMarker = null; }
+        }
+
+        function removeEndMarker() {
+            if (endMarker) { map.removeLayer(endMarker); endMarker = null; }
+        }
+
+        setupSearch(startSearch, startDropdown, startLatInput, startLonInput, removeStartMarker, setStartPoint);
+        setupSearch(endSearch,   endDropdown,   endLatInput,   endLonInput,   removeEndMarker,   setEndPoint);
+
+        // Close dropdowns when clicking anywhere outside them
+        document.addEventListener('click', e => {
+            if (!e.target.closest('#startDropdown') && !e.target.closest('#startSearch')) {
+                closeDropdown(startDropdown);
+            }
+            if (!e.target.closest('#endDropdown') && !e.target.closest('#endSearch')) {
+                closeDropdown(endDropdown);
+            }
+        });
+
+        // ── Map-click mode ──────────────────────────────────────────────────
+
+        function setClickMode(mode) {
+            clickMode = mode;
+            modeStartBtn.className = 'mode-btn';
+            modeEndBtn.className   = 'mode-btn';
+            modeOffBtn.className   = 'mode-btn';
+            mapEl.classList.remove('click-mode-start', 'click-mode-end');
+
+            if (mode === 'start') {
+                modeStartBtn.classList.add('active-start');
+                mapEl.classList.add('click-mode-start');
+            } else if (mode === 'end') {
+                modeEndBtn.classList.add('active-end');
+                mapEl.classList.add('click-mode-end');
+            } else {
+                modeOffBtn.classList.add('active-off');
+            }
+        }
+
+        setClickMode('off'); // initialise to Off
+
+        // Clicking the active mode button a second time deactivates it
+        modeStartBtn.addEventListener('click', () => setClickMode(clickMode === 'start' ? 'off' : 'start'));
+        modeEndBtn.addEventListener('click',   () => setClickMode(clickMode === 'end'   ? 'off' : 'end'));
+        modeOffBtn.addEventListener('click',   () => setClickMode('off'));
+
+        map.on('click', async e => {
+            if (clickMode === 'off') return;
+
+            const { lat, lng } = e.latlng;
+            const mode = clickMode;
+            setClickMode('off'); // reset immediately so a second stray click is harmless
+
+            let name = coordLabel(lat, lng);
+            try {
+                const result = await reverseGeocode(lat, lng);
+                if (result.display_name) name = result.display_name;
+            } catch { /* fall back to coordinate label */ }
+
+            if (mode === 'start') setStartPoint(lat, lng, name);
+            else                  setEndPoint(lat, lng, name);
+        });
+
+        // ── Field-state management (mutual exclusion: end point ↔ distance) ─
+
+        function updateFieldStates() {
+            const endFilled  = endLatInput.value.trim()  !== '' || endLonInput.value.trim() !== '';
+            const distFilled = distanceInput.value.trim() !== '' && parseFloat(distanceInput.value) > 0;
+
+            // Disable end-point search while distance is in use; disable distance
+            // inputs while an end point is set
+            endSearch.disabled          = !endFilled && distFilled;
+            distanceInput.disabled      = endFilled;
+            distanceUnitInput.disabled  = endFilled;
+        }
+
         distanceInput.addEventListener('input', updateFieldStates);
-        
+
+        // ── Error / stats helpers ────────────────────────────────────────────
+
         function showError(message) {
             errorDiv.textContent = message;
             errorDiv.classList.add('visible');
         }
-        
+
         function hideError() {
             errorDiv.classList.remove('visible');
         }
-        
+
         function showStats(distanceKm, distanceMiles, duration, instructions) {
             document.getElementById('statDistance').textContent = `${distanceKm} km (${distanceMiles} mi)`;
-            document.getElementById('statTime').textContent = duration;
+            document.getElementById('statTime').textContent     = duration;
             document.getElementById('statInstructions').textContent = instructions;
             statsDiv.classList.add('visible');
         }
-        
+
         function hideStats() {
             statsDiv.classList.remove('visible');
         }
-        
-        form.addEventListener('submit', async (e) => {
+
+        // ── Form submission — reads hidden inputs, logic unchanged ───────────
+
+        form.addEventListener('submit', async e => {
             e.preventDefault();
             hideError();
             hideStats();
-            
-            const startLat = parseFloat(document.getElementById('startLat').value);
-            const startLon = parseFloat(document.getElementById('startLon').value);
+
+            const startLat  = parseFloat(startLatInput.value);
+            const startLon  = parseFloat(startLonInput.value);
             const endLatVal = endLatInput.value.trim();
             const endLonVal = endLonInput.value.trim();
-            const profile = document.getElementById('profile').value;
-            
+            const profile   = document.getElementById('profile').value;
+
             const isRoundTrip = endLatVal === '' && endLonVal === '';
-            
+
             // Validate start point
             if (isNaN(startLat) || isNaN(startLon)) {
-                showError('Please enter valid start coordinates');
+                showError('Please search for and select a start point');
                 return;
             }
-            
+
             // Build payload based on mode
             let payload;
             if (isRoundTrip) {
@@ -354,76 +813,66 @@
                 }
                 payload = {
                     from: [startLat, startLon],
-                    profile: profile,
-                    distance: distance,
+                    profile,
+                    distance,
                     distanceUnit: distanceUnitInput.value
                 };
             } else {
                 const endLat = parseFloat(endLatVal);
                 const endLon = parseFloat(endLonVal);
                 if (isNaN(endLat) || isNaN(endLon)) {
-                    showError('Please enter valid end coordinates, or leave both blank for a round trip');
+                    showError('Please select a valid end point, or leave it blank for a round trip');
                     return;
                 }
                 payload = {
                     from: [startLat, startLon],
-                    to: [endLat, endLon],
-                    profile: profile
+                    to:   [endLat, endLon],
+                    profile
                 };
             }
-            
-            planButton.disabled = true;
-            planButton.textContent = 'Planning...';
-            
+
+            planButton.disabled    = true;
+            planButton.textContent = 'Planning…';
+
             try {
                 const response = await fetch('/api/routes', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                
+
                 if (!response.ok) {
                     const errorText = await response.text();
                     throw new Error(`Failed to plan route: ${response.status} ${errorText}`);
                 }
-                
+
                 const data = await response.json();
-                
+
                 if (!data.points || !data.points.coordinates) {
                     throw new Error('No route found');
                 }
-                
+
                 // GeoJSON coordinates are [lon, lat] — swap to [lat, lon] for Leaflet
                 const coordinates = data.points.coordinates.map(coord => [coord[1], coord[0]]);
-                
-                // Remove old route if exists
-                if (routeLayer) {
-                    map.removeLayer(routeLayer);
-                }
-                
-                // Add new route
+
+                if (routeLayer) map.removeLayer(routeLayer);
+
                 routeLayer = L.polyline(coordinates, {
                     color: '#007bff',
                     weight: 4,
                     opacity: 0.7
                 }).addTo(map);
-                
-                // Fit map to route bounds
-                map.fitBounds(routeLayer.getBounds(), {
-                    padding: [50, 50]
-                });
-                
-                // Show stats using pre-computed values from the API
+
+                map.fitBounds(routeLayer.getBounds(), { padding: [50, 50] });
+
                 const instructionCount = data.instructions ? data.instructions.length : 0;
                 showStats(data.distanceKm, data.distanceMiles, data.durationFormatted, instructionCount);
-                
+
             } catch (error) {
                 console.error('Route planning error:', error);
                 showError(error.message);
             } finally {
-                planButton.disabled = false;
+                planButton.disabled    = false;
                 planButton.textContent = 'Plan Route';
             }
         });
