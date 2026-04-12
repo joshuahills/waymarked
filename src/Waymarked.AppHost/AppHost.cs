@@ -15,4 +15,9 @@ var api = builder.AddProject<Projects.Waymarked_Api>("waymarked-api")
     .WithHttpHealthCheck("/health")
     .WaitFor(graphhopper);
 
+// Add Waymarked Web frontend
+var web = builder.AddProject<Projects.Waymarked_Web>("waymarked-web")
+    .WithReference(api)
+    .WaitFor(api);
+
 builder.Build().Run();

@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Waymarked - UK Route Planner</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        header {
+            background: #1a1a1a;
+            color: white;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .sidebar {
+            width: 350px;
+            background: #f8f9fa;
+            padding: 1.5rem;
+            overflow-y: auto;
+            border-right: 1px solid #dee2e6;
+        }
+        
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #495057;
+            font-size: 0.9rem;
+        }
+        
+        .coord-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+        }
+        
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 0.6rem;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 0.95rem;
+        }
+        
+        input[type="number"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+        }
+        
+        button {
+            width: 100%;
+            padding: 0.75rem;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        button:hover {
+            background: #0056b3;
+        }
+        
+        button:active {
+            background: #004085;
+        }
+        
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        .stats {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+            display: none;
+        }
+        
+        .stats.visible {
+            display: block;
+        }
+        
+        .stats h3 {
+            font-size: 1rem;
+            margin-bottom: 0.75rem;
+            color: #1a1a1a;
+        }
+        
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.4rem 0;
+            border-bottom: 1px solid #f1f3f5;
+        }
+        
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+        
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        
+        .stat-value {
+            font-weight: 500;
+            color: #212529;
+        }
+        
+        .error {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            color: #721c24;
+            font-size: 0.9rem;
+            display: none;
+        }
+        
+        .error.visible {
+            display: block;
+        }
+        
+        #map {
+            flex: 1;
+            background: #e9ecef;
+        }
+        
+        .helper-text {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-top: 0.25rem;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                max-height: 50vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Waymarked</h1>
+    </header>
+    
+    <div class="container">
+        <div class="sidebar">
+            <form id="routeForm">
+                <div class="form-group">
+                    <label for="startLat">Start Point</label>
+                    <div class="coord-inputs">
+                        <input type="number" id="startLat" step="0.0001" placeholder="Latitude" required>
+                        <input type="number" id="startLon" step="0.0001" placeholder="Longitude" required>
+                    </div>
+                    <div class="helper-text">e.g., 54.9783, -1.6178 (Newcastle)</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="endLat">End Point (optional)</label>
+                    <div class="coord-inputs">
+                        <input type="number" id="endLat" step="0.0001" placeholder="Latitude">
+                        <input type="number" id="endLon" step="0.0001" placeholder="Longitude">
+                    </div>
+                    <div class="helper-text">Leave blank for round trip</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="profile">Route Profile</label>
+                    <select id="profile" required>
+                        <option value="foot">Walking</option>
+                        <option value="hike">Hiking</option>
+                    </select>
+                </div>
+                
+                <button type="submit" id="planButton">Plan Route</button>
+            </form>
+            
+            <div id="error" class="error"></div>
+            
+            <div id="stats" class="stats">
+                <h3>Route Summary</h3>
+                <div class="stat-row">
+                    <span class="stat-label">Distance</span>
+                    <span class="stat-value" id="statDistance">-</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Estimated Time</span>
+                    <span class="stat-value" id="statTime">-</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Instructions</span>
+                    <span class="stat-value" id="statInstructions">-</span>
+                </div>
+            </div>
+        </div>
+        
+        <div id="map"></div>
+    </div>
+    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Initialize map centered on UK
+        const map = L.map('map').setView([54.0, -2.0], 6);
+        
+        // Add OpenTopoMap tiles
+        L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+            maxZoom: 17,
+            attribution: 'Map data: © OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap'
+        }).addTo(map);
+        
+        let routeLayer = null;
+        
+        const form = document.getElementById('routeForm');
+        const planButton = document.getElementById('planButton');
+        const errorDiv = document.getElementById('error');
+        const statsDiv = document.getElementById('stats');
+        
+        function showError(message) {
+            errorDiv.textContent = message;
+            errorDiv.classList.add('visible');
+        }
+        
+        function hideError() {
+            errorDiv.classList.remove('visible');
+        }
+        
+        function showStats(distance, time, instructions) {
+            const distanceKm = (distance / 1000).toFixed(1);
+            const distanceMiles = (distance / 1609.34).toFixed(1);
+            document.getElementById('statDistance').textContent = `${distanceKm} km (${distanceMiles} mi)`;
+            
+            const hours = Math.floor(time / 3600000);
+            const minutes = Math.floor((time % 3600000) / 60000);
+            const timeStr = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+            document.getElementById('statTime').textContent = timeStr;
+            
+            document.getElementById('statInstructions').textContent = instructions;
+            
+            statsDiv.classList.add('visible');
+        }
+        
+        function hideStats() {
+            statsDiv.classList.remove('visible');
+        }
+        
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideError();
+            hideStats();
+            
+            const startLat = parseFloat(document.getElementById('startLat').value);
+            const startLon = parseFloat(document.getElementById('startLon').value);
+            let endLat = parseFloat(document.getElementById('endLat').value);
+            let endLon = parseFloat(document.getElementById('endLon').value);
+            const profile = document.getElementById('profile').value;
+            
+            // Validate start point
+            if (isNaN(startLat) || isNaN(startLon)) {
+                showError('Please enter valid start coordinates');
+                return;
+            }
+            
+            // Default end to start if not provided (round trip)
+            if (isNaN(endLat) || isNaN(endLon)) {
+                endLat = startLat;
+                endLon = startLon;
+            }
+            
+            planButton.disabled = true;
+            planButton.textContent = 'Planning...';
+            
+            try {
+                const response = await fetch('/api/routes', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        from: [startLat, startLon],
+                        to: [endLat, endLon],
+                        profile: profile
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Failed to plan route: ${response.status} ${errorText}`);
+                }
+                
+                const data = await response.json();
+                
+                if (!data.paths || data.paths.length === 0) {
+                    throw new Error('No route found');
+                }
+                
+                const path = data.paths[0];
+                
+                // Extract coordinates from GeoJSON
+                let coordinates;
+                if (path.points && path.points.type === 'LineString') {
+                    // GeoJSON format: coordinates are [lon, lat], need to swap to [lat, lon] for Leaflet
+                    coordinates = path.points.coordinates.map(coord => [coord[1], coord[0]]);
+                } else {
+                    throw new Error('Unexpected route format');
+                }
+                
+                // Remove old route if exists
+                if (routeLayer) {
+                    map.removeLayer(routeLayer);
+                }
+                
+                // Add new route
+                routeLayer = L.polyline(coordinates, {
+                    color: '#007bff',
+                    weight: 4,
+                    opacity: 0.7
+                }).addTo(map);
+                
+                // Fit map to route bounds
+                map.fitBounds(routeLayer.getBounds(), {
+                    padding: [50, 50]
+                });
+                
+                // Show stats
+                const instructionCount = path.instructions ? path.instructions.length : 0;
+                showStats(path.distance, path.time, instructionCount);
+                
+            } catch (error) {
+                console.error('Route planning error:', error);
+                showError(error.message);
+            } finally {
+                planButton.disabled = false;
+                planButton.textContent = 'Plan Route';
+            }
+        });
+    </script>
+</body>
+</html>
