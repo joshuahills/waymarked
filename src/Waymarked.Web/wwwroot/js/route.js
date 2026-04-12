@@ -1,5 +1,7 @@
 // ── Field-state management (mutual exclusion: end point ↔ distance) ─
 
+let lastRouteRequest = null;
+
 function updateFieldStates() {
     const endFilled  = endLatInput.value.trim()  !== '' || endLonInput.value.trim() !== '';
     const distFilled = distanceInput.value.trim() !== '' && parseFloat(distanceInput.value) > 0;
@@ -43,6 +45,7 @@ function hideStats() {
     stepsToggle.style.display = 'none';
     stepsList.style.display = 'none';
     stepsList.innerHTML = '';
+    exportSection.style.display = 'none';
 }
 
 function showSteps(instructions) {
@@ -113,6 +116,8 @@ form.addEventListener('submit', async e => {
     planButton.disabled    = true;
     planButton.textContent = 'Planning…';
 
+    lastRouteRequest = payload;
+
     try {
         const response = await fetch('/api/routes', {
             method: 'POST',
@@ -150,6 +155,7 @@ form.addEventListener('submit', async e => {
         const instructionCount = data.instructions ? data.instructions.length : 0;
         showStats(data.distanceKm, data.distanceMiles, data.durationFormatted, instructionCount);
         showSteps(data.instructions);
+        exportSection.style.display = 'block';
 
     } catch (error) {
         console.error('Route planning error:', error);
@@ -159,3 +165,44 @@ form.addEventListener('submit', async e => {
         planButton.textContent = 'Plan Route';
     }
 });
+
+// ── Export download handler ──────────────────────────────────────────
+
+async function exportRoute(format) {
+    if (!lastRouteRequest) return;
+
+    const btnId = `export${format.charAt(0).toUpperCase() + format.slice(1)}`;
+    const btn = document.getElementById(btnId);
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '…';
+
+    try {
+        const res = await fetch(`/api/routes/export/${format}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(lastRouteRequest)
+        });
+
+        if (!res.ok) throw new Error(`Export failed: ${res.status}`);
+
+        const blob = await res.blob();
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href     = url;
+        a.download = `waymarked-route.${format}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    } catch (err) {
+        console.error('Export error:', err);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+    }
+}
+
+exportGpx.addEventListener('click',     () => exportRoute('gpx'));
+exportKml.addEventListener('click',     () => exportRoute('kml'));
+exportGeoJson.addEventListener('click', () => exportRoute('geojson'));

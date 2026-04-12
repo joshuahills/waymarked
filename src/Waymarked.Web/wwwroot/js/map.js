@@ -36,6 +36,11 @@ const mapEl             = document.getElementById('map');
 const stepsToggle       = document.getElementById('stepsToggle');
 const stepsList         = document.getElementById('stepsList');
 
+const exportSection     = document.getElementById('exportSection');
+const exportGpx         = document.getElementById('exportGpx');
+const exportKml         = document.getElementById('exportKml');
+const exportGeoJson     = document.getElementById('exportGeoJson');
+
 // ── Marker state ────────────────────────────────────────────────────
 let startMarker = null;
 let endMarker   = null;
