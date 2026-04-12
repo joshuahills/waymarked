@@ -59,6 +59,28 @@ app.MapPost("/api/routes", async (ApiRouteRequest apiRequest, GraphHopperClient 
         };
     }
 
+    // Validate distance bounds for round-trip routes
+    if (distanceInMetres.HasValue)
+    {
+        if (distanceInMetres.Value < 500)
+        {
+            return Results.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["Distance"] = ["Distance must be at least 0.5 km (500 metres)"]
+            });
+        }
+        
+        if (distanceInMetres.Value > 100000)
+        {
+            return Results.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["Distance"] = ["Distance must not exceed 100 km (100,000 metres)"]
+            });
+        }
+    }
+
+    // TODO: coordinate validation — Data (GIS) will add UK bounds checking here
+
     var request = new RouteRequest
     {
         From = apiRequest.From,
@@ -76,7 +98,8 @@ app.MapPost("/api/routes", async (ApiRouteRequest apiRequest, GraphHopperClient 
             return Results.NotFound(new { error = "No route found" });
         }
 
-        return Results.Ok(response);
+        var waymarkedResponse = WaymarkedRouteResponse.FromRouteResponse(response, isRoundTrip: apiRequest.To == null);
+        return Results.Ok(waymarkedResponse);
     }
     catch (HttpRequestException ex)
     {
