@@ -101,3 +101,5 @@ record ApiRouteRequest(
     string? DistanceUnit = "kilometres",
     string? Profile = "hike"
 );
+
+public partial class Program { }
