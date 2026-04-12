@@ -296,6 +296,79 @@ If scaling is needed:
 
 ---
 
+### 2026-04-12: WaymarkedRouteResponse introduced
+
+**Status:** IMPLEMENTED | **Owner:** Brand (Backend Dev)
+
+#### Decision: Added WaymarkedRouteResponse wrapper type with derived fields and distance validation bounds
+
+**What:** Added WaymarkedRouteResponse wrapper type in Waymarked.Routing. POST /api/routes now returns derived fields (DistanceKm, DistanceMiles, DurationFormatted, IsRoundTrip) so the frontend doesn't compute them. Distance validation bounds set: 0.5 km min, 100 km max.
+
+**Why:** Agreed with Mouth (frontend) and Data (GIS) to clean up frontend responsibilities and add sensible API-level validation.
+
+**Implementation:**
+- WaymarkedRouteResponse encapsulates route data with computed fields
+- Distance bounds: 0.5 km–100 km (enforced at API layer)
+- Frontend receives pre-formatted durations and distance conversions
+- Reduces frontend logic complexity
+
+**Validation:**
+✅ Build successful  
+✅ Commit: 9a63ea4
+
+---
+
+### 2026-04-12: Test Infrastructure Established
+
+**Status:** IMPLEMENTED | **Owner:** Chunk (Tester)
+
+#### Decision: xUnit test projects with lightweight HttpClient mocking
+
+**What:** xUnit test projects created for Waymarked.Routing and Waymarked.Api. Tests cover routing logic, distance conversions, query string construction, and API endpoint validation.
+
+**Key Patterns:**
+- HttpClient mocked via custom DelegatingHandler (CapturingHandler) — simpler than NSubstitute for this use case
+- WebApplicationFactory with StubGraphHopperHandler for API integration tests
+- Avoided heavy mocking frameworks where possible; DelegatingHandler approach is lightweight and predictable
+- Added `public partial class Program {}` to Program.cs for WebApplicationFactory type reference
+
+**Test Coverage:**
+- Waymarked.Routing.Tests: 27 tests (RouteRequest model, GraphHopperClient query strings, distance conversions)
+- Waymarked.Api.Tests: 6 integration smoke tests (endpoint validation, happy/sad paths)
+- **Total: 33 tests passing**
+
+**Why:** Sets baseline for regression testing as features evolve. Tests cover A→B vs round-trip routing, unit conversions, query string construction, and error handling.
+
+**Status:**
+✅ All tests passing  
+✅ Infrastructure worked first attempt
+
+---
+
+### 2026-04-12: Adopt NuGet Central Package Management
+
+**Status:** IMPLEMENTED | **Owner:** Mikey (at Josh Hills request)
+
+#### Decision: Migrated to CPM via Directory.Packages.props
+
+**What:** All projects migrated to Central Package Management (CPM) via `src/Directory.Packages.props`. All package versions live in one place. Also added `src/Directory.Build.props` for shared Nullable/ImplicitUsings/TreatWarningsAsErrors.
+
+**Why:** Single source of truth for dependency versions; easier upgrades; prevents version drift between projects.
+
+**Packages Updated:**
+- Yarp.ReverseProxy: 2.2.0 → 2.3.0
+- coverlet.collector: 6.0.4 → 8.0.1
+- Microsoft.NET.Test.Sdk: 17.14.1 → 18.4.0
+- xunit.runner.visualstudio: 3.1.4 → 3.1.5
+- Added Microsoft.Extensions.ServiceDiscovery.Yarp: 10.4.0 (implicit dependency from YARP + Aspire integration)
+
+**Benefits:**
+- Centralized version management
+- Reduced duplicated version declarations
+- Simplified dependency upgrades
+
+---
+
 ## Governance
 
 - All meaningful changes require team consensus

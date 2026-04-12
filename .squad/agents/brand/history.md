@@ -179,3 +179,33 @@ src/
 **Backward Compatibility:**
 - A→B routing unchanged: existing clients sending `From` + `To` work exactly as before
 - Round-trip is opt-in: only triggered when `To` is omitted
+
+### WaymarkedRouteResponse and Distance Validation (2026-04-12)
+
+**WaymarkedRouteResponse Type:**
+- Added new record type in `Waymarked.Routing` namespace
+- Provides client-friendly derived fields from GraphHopper's raw response
+- Properties:
+  - `Distance` (double): raw metres from GraphHopper
+  - `DistanceKm` (double): metres ÷ 1000, rounded to 2 decimal places
+  - `DistanceMiles` (double): metres ÷ 1609.344, rounded to 2 decimal places
+  - `DurationMs` (long): milliseconds from GraphHopper (already in ms, no conversion needed)
+  - `DurationFormatted` (string): human-readable format (e.g., "1h 23m" or "45m")
+  - `Points` (RoutePoints?): GeoJSON LineString from first path
+  - `Instructions` (RouteInstruction[]?): turn-by-turn instructions
+  - `IsRoundTrip` (bool): whether this was a round-trip request
+- Factory method: `FromRouteResponse(RouteResponse response, bool isRoundTrip)`
+- Duration formatting: shows hours only if >= 60 minutes, always shows minutes
+
+**Distance Bounds Validation:**
+- Validates round-trip distance AFTER unit conversion (in metres)
+- Minimum: 500 metres (0.5 km)
+- Maximum: 100,000 metres (100 km)
+- Only validates when `distanceInMetres.HasValue` (A→B routes unaffected)
+- Returns `Results.ValidationProblem` with descriptive error messages
+- Validation happens post-conversion, so bounds are consistent regardless of input unit
+
+**Coordinate Validation Placeholder:**
+- TODO comment added in `Program.cs` before route request construction
+- Reserved space for Data (GIS team) to add UK bounding box validation
+- Keeps validation concerns separated: distance (Backend) vs coordinates (Data)
