@@ -1,5 +1,7 @@
 # Waymarked Solution
 
+[![CI](https://github.com/joshuahills/waymarked/actions/workflows/ci.yml/badge.svg)](https://github.com/joshuahills/waymarked/actions/workflows/ci.yml)
+
 .NET Aspire-based solution for the Waymarked UK walking/hiking/running route planner.
 
 ## Projects
