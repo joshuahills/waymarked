@@ -32,12 +32,12 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
     }
 
     [Fact]
-    public async Task Post_ApiRoutes_AbRoute_Returns200WithPaths()
+    public async Task Post_ApiRoutes_AbRoute_Returns200WithDistanceKm()
     {
         var payload = new
         {
             from = new[] { 51.5074, -0.1278 },
-            to = new[] { 53.4808, -2.2426 },
+            to   = new[] { 53.4808, -2.2426 },
             profile = "hike"
         };
 
@@ -46,12 +46,21 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var json = await response.Content.ReadAsStringAsync();
         var doc = JsonDocument.Parse(json);
-        doc.RootElement.TryGetProperty("paths", out var paths).Should().BeTrue();
-        paths.GetArrayLength().Should().BeGreaterThan(0);
+
+        // WaymarkedRouteResponse shape assertions
+        doc.RootElement.TryGetProperty("distanceKm", out var distanceKm).Should().BeTrue();
+        distanceKm.GetDouble().Should().BeGreaterThan(0);
+
+        doc.RootElement.TryGetProperty("points", out var points).Should().BeTrue();
+        points.TryGetProperty("coordinates", out var coords).Should().BeTrue();
+        coords.GetArrayLength().Should().BeGreaterThan(0);
+
+        doc.RootElement.TryGetProperty("isRoundTrip", out var isRoundTrip).Should().BeTrue();
+        isRoundTrip.GetBoolean().Should().BeFalse("A to B route with a To point is not a round trip");
     }
 
     [Fact]
-    public async Task Post_ApiRoutes_RoundTrip_Returns200WithPaths()
+    public async Task Post_ApiRoutes_RoundTrip_Returns200WithDistanceKm()
     {
         var payload = new
         {
@@ -66,7 +75,17 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var json = await response.Content.ReadAsStringAsync();
         var doc = JsonDocument.Parse(json);
-        doc.RootElement.TryGetProperty("paths", out _).Should().BeTrue();
+
+        // WaymarkedRouteResponse shape assertions
+        doc.RootElement.TryGetProperty("distanceKm", out var distanceKm).Should().BeTrue();
+        distanceKm.GetDouble().Should().BeGreaterThan(0);
+
+        doc.RootElement.TryGetProperty("points", out var points).Should().BeTrue();
+        points.TryGetProperty("coordinates", out var coords).Should().BeTrue();
+        coords.GetArrayLength().Should().BeGreaterThan(0);
+
+        doc.RootElement.TryGetProperty("isRoundTrip", out var isRoundTrip).Should().BeTrue();
+        isRoundTrip.GetBoolean().Should().BeTrue("no To provided means this is a round trip");
     }
 
     [Fact]
@@ -112,5 +131,55 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
         var response = await _client.PostAsJsonAsync("/api/routes", payload);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task Post_ApiRoutes_FromOutsideGreatBritain_Returns400()
+    {
+        // Paris (lat=48.8566, lon=2.3522) is outside GB bounds (lat 49.8-60.9, lon -8.7-1.8)
+        var payload = new
+        {
+            from = new[] { 48.8566, 2.3522 },
+            to   = new[] { 51.5074, -0.1278 }, // London is valid, but From should fail first
+            profile = "hike"
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/routes", payload);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Post_ApiRoutes_DistanceTooSmall_Returns400()
+    {
+        // 0.1 km = 100 m — below the 500 m minimum
+        var payload = new
+        {
+            from = new[] { 51.5074, -0.1278 },
+            distance = 0.1,
+            distanceUnit = "kilometres",
+            profile = "hike"
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/routes", payload);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Post_ApiRoutes_DistanceTooLarge_Returns400()
+    {
+        // 200 km = 200,000 m — above the 100 km maximum
+        var payload = new
+        {
+            from = new[] { 51.5074, -0.1278 },
+            distance = 200.0,
+            distanceUnit = "kilometres",
+            profile = "hike"
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/routes", payload);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 }

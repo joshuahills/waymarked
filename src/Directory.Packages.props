@@ -25,6 +25,12 @@
     <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery.Yarp" Version="10.4.0" />
     <PackageVersion Include="Yarp.ReverseProxy" Version="2.3.0" />
     
+    <!-- Aspire testing -->
+    <PackageVersion Include="Aspire.Hosting.Testing" Version="9.3.0" />
+
+    <!-- Playwright -->
+    <PackageVersion Include="Microsoft.Playwright" Version="1.51.0" />
+
     <!-- Testing packages -->
     <PackageVersion Include="coverlet.collector" Version="8.0.1" />
     <PackageVersion Include="FluentAssertions" Version="8.9.0" />
