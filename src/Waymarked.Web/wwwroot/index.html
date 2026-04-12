@@ -171,6 +171,20 @@
             margin-top: 0.25rem;
         }
         
+        .distance-inputs {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 0.5rem;
+        }
+        
+        input[type="number"]:disabled,
+        select:disabled {
+            background: #e9ecef;
+            color: #adb5bd;
+            cursor: not-allowed;
+            border-color: #dee2e6;
+        }
+        
         @media (max-width: 768px) {
             .container {
                 flex-direction: column;
@@ -207,6 +221,18 @@
                         <input type="number" id="endLon" step="0.0001" placeholder="Longitude">
                     </div>
                     <div class="helper-text">Leave blank for round trip</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="distance">Distance (round trip only)</label>
+                    <div class="distance-inputs">
+                        <input type="number" id="distance" step="0.1" min="0.1" placeholder="Distance" value="10">
+                        <select id="distanceUnit">
+                            <option value="kilometres">km</option>
+                            <option value="miles">mi</option>
+                        </select>
+                    </div>
+                    <div class="helper-text">Required when no end point is set</div>
                 </div>
                 
                 <div class="form-group">
@@ -260,6 +286,25 @@
         const errorDiv = document.getElementById('error');
         const statsDiv = document.getElementById('stats');
         
+        const endLatInput = document.getElementById('endLat');
+        const endLonInput = document.getElementById('endLon');
+        const distanceInput = document.getElementById('distance');
+        const distanceUnitInput = document.getElementById('distanceUnit');
+        
+        function updateFieldStates() {
+            const endFilled = endLatInput.value.trim() !== '' || endLonInput.value.trim() !== '';
+            const distFilled = distanceInput.value.trim() !== '' && parseFloat(distanceInput.value) > 0;
+            
+            // If end point has values, disable distance; if distance has a value, disable end point
+            endLatInput.disabled = !endFilled && distFilled;
+            endLonInput.disabled = !endFilled && distFilled;
+            distanceInput.disabled = endFilled;
+            distanceUnitInput.disabled = endFilled;
+        }
+        
+        [endLatInput, endLonInput].forEach(el => el.addEventListener('input', updateFieldStates));
+        distanceInput.addEventListener('input', updateFieldStates);
+        
         function showError(message) {
             errorDiv.textContent = message;
             errorDiv.classList.add('visible');
@@ -295,9 +340,11 @@
             
             const startLat = parseFloat(document.getElementById('startLat').value);
             const startLon = parseFloat(document.getElementById('startLon').value);
-            let endLat = parseFloat(document.getElementById('endLat').value);
-            let endLon = parseFloat(document.getElementById('endLon').value);
+            const endLatVal = endLatInput.value.trim();
+            const endLonVal = endLonInput.value.trim();
             const profile = document.getElementById('profile').value;
+            
+            const isRoundTrip = endLatVal === '' && endLonVal === '';
             
             // Validate start point
             if (isNaN(startLat) || isNaN(startLon)) {
@@ -305,10 +352,32 @@
                 return;
             }
             
-            // Default end to start if not provided (round trip)
-            if (isNaN(endLat) || isNaN(endLon)) {
-                endLat = startLat;
-                endLon = startLon;
+            // Build payload based on mode
+            let payload;
+            if (isRoundTrip) {
+                const distance = parseFloat(distanceInput.value);
+                if (isNaN(distance) || distance <= 0) {
+                    showError('Please enter a distance greater than 0 for a round trip');
+                    return;
+                }
+                payload = {
+                    from: [startLat, startLon],
+                    profile: profile,
+                    distance: distance,
+                    distanceUnit: distanceUnitInput.value
+                };
+            } else {
+                const endLat = parseFloat(endLatVal);
+                const endLon = parseFloat(endLonVal);
+                if (isNaN(endLat) || isNaN(endLon)) {
+                    showError('Please enter valid end coordinates, or leave both blank for a round trip');
+                    return;
+                }
+                payload = {
+                    from: [startLat, startLon],
+                    to: [endLat, endLon],
+                    profile: profile
+                };
             }
             
             planButton.disabled = true;
@@ -320,11 +389,7 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        from: [startLat, startLon],
-                        to: [endLat, endLon],
-                        profile: profile
-                    })
+                    body: JSON.stringify(payload)
                 });
                 
                 if (!response.ok) {
