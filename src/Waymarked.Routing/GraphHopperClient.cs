@@ -28,7 +28,9 @@ public class GraphHopperClient(HttpClient httpClient, ILogger<GraphHopperClient>
         else
         {
             // Round-trip routing: use algorithm and distance
+            // ch.disable=true required — Contraction Hierarchies doesn't support round_trip algorithm
             logger.LogInformation("Using round-trip routing mode with distance {Distance}m", request.Distance);
+            queryString += "&ch.disable=true";
             queryString += "&algorithm=round_trip";
             queryString += $"&round_trip.distance={Convert.ToInt32(request.Distance)}";
             queryString += $"&round_trip.seed={Random.Shared.Next()}";
