@@ -508,17 +508,35 @@ Scoped overrides for `[data-theme="dark"]`:
 - Attribution (`.leaflet-control-attribution`): translucent dark bg, muted text, green links
 - Popups (`.leaflet-popup-content-wrapper`, `.leaflet-popup-tip`): dark bg, light text
 
-### Known Limitation: OpenTopoMap Tile Colour
+### OpenTopoMap Tile Darkening in Dark Mode (Resolution: 2026-04-13)
 
-**OpenTopoMap raster tiles cannot be darkened.** The tiles are pre-rendered bitmap images served from a CDN (`{s}.tile.opentopomap.org`). There is no dark-mode variant available. The map tile viewport will remain visually light regardless of the active theme.
+**Status:** ✅ RESOLVED | **Implementation:** Commit 8e3cf6d
 
-This is **expected and acceptable** for the current MVP. The UI chrome (sidebar, header, controls, panels) themes correctly. The route polyline (magenta `#E0007A`) is readable against both light tiles and the dark sidebar.
+OpenTopoMap raster tiles can now be darkened in dark mode using a CSS filter. The previous limitation stating "tiles cannot be darkened" is now resolved.
 
-#### Future Mitigation Options (if needed)
+#### Implementation
 
-1. Switch to a **vector tile provider** (Mapbox GL JS, MapTiler) — vector tiles re-render client-side and can be fully restyled with a dark basemap style
-2. Apply a CSS `filter: invert(90%) hue-rotate(180deg)` to the `#map` element as a low-effort approximation (degrades tile readability)
-3. Subscribe to **Thunderforest Outdoors** (already in the data stack decision) or **Stadia Maps** which offer dark tile variants
+Applied CSS filter to `.leaflet-tile-pane` under `[data-theme="dark"]` in `src/Waymarked.Web/wwwroot/css/app.css`:
+
+```css
+[data-theme="dark"] .leaflet-tile-pane {
+    filter: invert(100%) hue-rotate(180deg);
+}
+```
+
+- **`invert(100%)`** — Flips tile luminance: light pixels become dark, dark become light
+- **`hue-rotate(180deg)`** — Rotates colour hues to counteract the "negative" effect and restore natural perception (green stays greenish, blue stays bluish)
+
+#### Scope
+
+- **Applied to:** `.leaflet-tile-pane` (raster tiles only)
+- **Intentionally unaffected:** `.leaflet-overlay-pane` (SVG layer with route polylines and markers)
+  - Route polyline (#E0007A magenta) retains its original colour in both light and dark mode for high contrast
+  - Markers and other SVG overlays are unfiltered
+
+#### Result
+
+Tiles now appear appropriately darkened in dark mode while maintaining route visibility. No filter applied in light mode.
 
 ### Files Changed
 - `src/Waymarked.Web/wwwroot/css/app.css`

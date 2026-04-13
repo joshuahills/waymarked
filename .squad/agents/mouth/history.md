@@ -175,3 +175,20 @@ filter: invert(100%) hue-rotate(180deg);
 
 **Supersedes:** The "Known limitation" note from the Dark Mode Toggle entry above. Tiles can now be darkened via this approach.
 
+---
+
+### Header Title Colour Fix (2026-04-13)
+
+**Decision:** Pinned header h1 text to white with `!important` to ensure title remains visible in dark mode
+
+**Key Files:**
+- `src/Waymarked.Web/wwwroot/css/app.css` — Added `[data-theme="dark"] header h1` rule with explicit `color: white !important`
+
+**Problem:** The header h1 element was inheriting the dark mode text colour (`--clr-ink: #e8e8ea`), which resulted in very light/faded text that was barely visible against the green header background in dark mode.
+
+**Solution:** Explicitly pin h1 colour to pure white (`#ffffff`) within the dark mode scope. The `!important` flag ensures this overrides any cascading rules from the token system.
+
+**Result:** Title "Waymarked" now clearly readable in both light and dark modes.
+
+**Commit:** 6329fe5
+
