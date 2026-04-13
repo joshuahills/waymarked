@@ -28,7 +28,7 @@ graphhopper:
   prepare.min_network_size: 200
   routing.non_ch.max_waypoint_distance: 1000000
 
-  # Don't exclude footways/paths — they are essential for walking/hiking routing
+  # Don't exclude footways/paths— they are essential for walking/hiking routing
   import.osm.ignored_highways: motorway,trunk
 
 # Dropwizard server config (GH 11.x moved web settings here)

@@ -23,10 +23,13 @@ else
 
 // Common configuration — bind-mount config + data dir, expose HTTP, set JVM heap.
 // In CI with the small IoW extract, 2 GB is plenty. Locally use 6 GB for full UK data.
+// /info returns 200 only when GH has fully loaded the graph; using it as a health check
+// ensures api.WaitFor(graphhopper) blocks until routing is actually available.
 graphhopper
     .WithBindMount("../../infra/graphhopper/config.yml", "/data/config.yml", isReadOnly: true)
     .WithBindMount("../../infra/graphhopper/data", "/data", isReadOnly: false)
     .WithHttpEndpoint(targetPort: 8989, name: "http")
+    .WithHttpHealthCheck("/info", endpointName: "http")
     .WithEnvironment("JAVA_OPTS", string.IsNullOrEmpty(prebuiltImage) ? "-Xmx6g -Xms512m" : "-Xmx2g -Xms256m");
 
 // Add Waymarked API service

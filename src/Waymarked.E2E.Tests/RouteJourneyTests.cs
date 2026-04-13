@@ -75,9 +75,9 @@ public class RouteJourneyTests : IClassFixture<AspireFixture>
         var (playwright, browser, page) = await OpenAppAsync();
         try
         {
-            // Inject Newport, Isle of Wight coordinates directly — avoids live Nominatim call
-            await page.EvalOnSelectorAsync("#startLat", "el => el.value = '50.7017'");
-            await page.EvalOnSelectorAsync("#startLon", "el => el.value = '-1.2986'");
+            // Fill display fields first — the 'input' event handler in geocoder.js clears
+            // the hidden lat/lon inputs whenever the search box changes, so coords must be
+            // injected AFTER any FillAsync call on the search inputs.
             await page.FillAsync("#startSearch", "Newport, Isle of Wight");
 
             // Leave end point blank → round trip. Set distance to 10 km.
@@ -85,6 +85,11 @@ public class RouteJourneyTests : IClassFixture<AspireFixture>
             var unitSelect = page.Locator("#distanceUnit");
             if (await unitSelect.CountAsync() > 0)
                 await unitSelect.SelectOptionAsync("kilometres");
+
+            // Inject Newport, Isle of Wight coordinates directly — avoids live Nominatim call.
+            // Must come after FillAsync calls so the geocoder's input-clear doesn't wipe them.
+            await page.EvalOnSelectorAsync("#startLat", "el => el.value = '50.7017'");
+            await page.EvalOnSelectorAsync("#startLon", "el => el.value = '-1.2986'");
 
             // Plan the route
             await page.ClickAsync("button:has-text('Plan Route')");
@@ -116,15 +121,16 @@ public class RouteJourneyTests : IClassFixture<AspireFixture>
         var (playwright, browser, page) = await OpenAppAsync();
         try
         {
-            // Inject Newport (start) coordinates directly
-            await page.EvalOnSelectorAsync("#startLat", "el => el.value = '50.7017'");
-            await page.EvalOnSelectorAsync("#startLon", "el => el.value = '-1.2986'");
+            // Fill display fields first — the 'input' event clears hidden lat/lon inputs,
+            // so coords must be injected AFTER any FillAsync on search inputs.
             await page.FillAsync("#startSearch", "Newport, Isle of Wight");
 
-            // Inject Ryde (end) coordinates directly
-            await page.EvalOnSelectorAsync("#endLat", "el => el.value = '50.7274'");
-            await page.EvalOnSelectorAsync("#endLon", "el => el.value = '-1.1616'");
-            await page.FillAsync("#endSearch", "Ryde");
+            // Inject Newport (start) and Ryde (end) coordinates directly — no FillAsync
+            // on #endSearch needed (and it may be disabled after updateFieldStates fires).
+            await page.EvalOnSelectorAsync("#startLat", "el => el.value = '50.7017'");
+            await page.EvalOnSelectorAsync("#startLon", "el => el.value = '-1.2986'");
+            await page.EvalOnSelectorAsync("#endLat",   "el => el.value = '50.7274'");
+            await page.EvalOnSelectorAsync("#endLon",   "el => el.value = '-1.1616'");
 
             // Plan
             await page.ClickAsync("button:has-text('Plan Route')");
@@ -223,12 +229,16 @@ public class RouteJourneyTests : IClassFixture<AspireFixture>
         var (playwright, browser, page) = await OpenAppAsync();
         try
         {
-            // Inject Newport, Isle of Wight coordinates directly — avoids the autocomplete network call
-            await page.EvalOnSelectorAsync("#startLat", "el => el.value = '50.7017'");
-            await page.EvalOnSelectorAsync("#startLon", "el => el.value = '-1.2986'");
+            // Fill display fields first — the 'input' event clears hidden lat/lon inputs,
+            // so coords must be injected AFTER any FillAsync on search inputs.
             await page.FillAsync("#startSearch", "Newport, Isle of Wight");
 
             await page.FillAsync("#distance", "5");
+
+            // Inject Newport, Isle of Wight coordinates directly — avoids the autocomplete network call.
+            // Must come after FillAsync calls so the geocoder's input-clear doesn't wipe them.
+            await page.EvalOnSelectorAsync("#startLat", "el => el.value = '50.7017'");
+            await page.EvalOnSelectorAsync("#startLon", "el => el.value = '-1.2986'");
 
             // Plan the route
             await page.ClickAsync("#planButton");
@@ -284,12 +294,16 @@ public class RouteJourneyTests : IClassFixture<AspireFixture>
         var (playwright, browser, page) = await OpenAppAsync();
         try
         {
-            // Inject Newport, Isle of Wight coordinates and plan a round trip
-            await page.EvalOnSelectorAsync("#startLat", "el => el.value = '50.7017'");
-            await page.EvalOnSelectorAsync("#startLon", "el => el.value = '-1.2986'");
+            // Fill display fields first — the 'input' event clears hidden lat/lon inputs,
+            // so coords must be injected AFTER any FillAsync on search inputs.
             await page.FillAsync("#startSearch", "Newport, Isle of Wight");
 
             await page.FillAsync("#distance", "5");
+
+            // Inject Newport, Isle of Wight coordinates directly — avoids live Nominatim call.
+            // Must come after FillAsync calls so the geocoder's input-clear doesn't wipe them.
+            await page.EvalOnSelectorAsync("#startLat", "el => el.value = '50.7017'");
+            await page.EvalOnSelectorAsync("#startLon", "el => el.value = '-1.2986'");
 
             await page.ClickAsync("#planButton");
 
