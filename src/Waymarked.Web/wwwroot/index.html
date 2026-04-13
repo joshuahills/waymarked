@@ -74,19 +74,40 @@
                     <div class="helper-text">e.g. "Keswick", "LA22 9QU", "Scafell Pike"</div>
                 </div>
 
-                <!-- End Point — place search replaces number inputs -->
-                <div class="form-group">
-                    <label for="endSearch">End Point <span style="font-weight:400;text-transform:none;">(optional)</span></label>
-                    <div class="search-wrapper">
-                        <input type="text" id="endSearch" class="search-input"
-                               placeholder="Search place, postcode or address…"
-                               autocomplete="off" spellcheck="false">
-                        <div class="search-dropdown" id="endDropdown"></div>
+                <!-- Route Type toggle -->
+                <div class="route-type-toggle" role="group" aria-label="Route type">
+                    <button type="button" id="routeTypeRoundTrip" class="route-type-btn active" aria-pressed="true">🔄 Round Trip</button>
+                    <button type="button" id="routeTypePtoP" class="route-type-btn" aria-pressed="false">→ Point to Point</button>
+                </div>
+
+                <!-- Round trip: distance field (shown by default) -->
+                <div id="roundTripSection">
+                    <div class="form-group">
+                        <label for="distance">Distance</label>
+                        <div class="distance-inputs">
+                            <input type="number" id="distance" step="0.1" min="0.1" placeholder="Distance" value="10">
+                            <select id="distanceUnit">
+                                <option value="kilometres">km</option>
+                                <option value="miles">mi</option>
+                            </select>
+                        </div>
                     </div>
-                    <!-- Hidden coords read by the submit handler (unchanged contract) -->
-                    <input type="hidden" id="endLat">
-                    <input type="hidden" id="endLon">
-                    <div class="helper-text">Leave blank for round trip</div>
+                </div>
+
+                <!-- Point to point: end location field (hidden by default) -->
+                <div id="pointToPointSection" style="display:none">
+                    <div class="form-group">
+                        <label for="endSearch">End Point</label>
+                        <div class="search-wrapper">
+                            <input type="text" id="endSearch" class="search-input"
+                                   placeholder="Search place, postcode or address…"
+                                   autocomplete="off" spellcheck="false">
+                            <div class="search-dropdown" id="endDropdown"></div>
+                        </div>
+                        <!-- Hidden coords read by the submit handler (unchanged contract) -->
+                        <input type="hidden" id="endLat">
+                        <input type="hidden" id="endLon">
+                    </div>
                 </div>
 
                 <hr class="divider">
@@ -102,18 +123,6 @@
                 </div>
 
                 <hr class="divider">
-
-                <div class="form-group">
-                    <label for="distance">Distance (round trip only)</label>
-                    <div class="distance-inputs">
-                        <input type="number" id="distance" step="0.1" min="0.1" placeholder="Distance" value="10">
-                        <select id="distanceUnit">
-                            <option value="kilometres">km</option>
-                            <option value="miles">mi</option>
-                        </select>
-                    </div>
-                    <div class="helper-text">Required when no end point is set</div>
-                </div>
 
                 <div class="form-group">
                     <label for="profile">Route Profile</label>

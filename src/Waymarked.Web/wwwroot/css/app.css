@@ -372,6 +372,69 @@ button:disabled {
 }
 
 /* ── Map-click mode toggle ──────────────────────────────────────────── */
+/* ── Route type toggle (Round Trip / Point to Point) ─────────────── */
+.route-type-toggle {
+    display: flex;
+    gap: 0;
+    margin-bottom: 1rem;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 2px solid var(--clr-earth);
+}
+
+.route-type-btn {
+    flex: 1;
+    padding: 0.6rem 0.5rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    font-family: inherit;
+    background: var(--clr-white);
+    color: var(--clr-earth);
+    border: none;
+    border-radius: 0;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    min-height: 44px;
+    text-align: center;
+}
+
+/* Suppress global button arrow */
+.route-type-btn::after { content: ''; }
+
+.route-type-btn:hover {
+    background: var(--clr-earth-lt);
+    color: var(--clr-earth);
+    transform: none;
+    box-shadow: none;
+}
+
+.route-type-btn.active {
+    background: var(--clr-earth);
+    color: #ffffff;
+}
+
+.route-type-btn.active:hover {
+    background: var(--clr-earth-dk);
+    color: #ffffff;
+}
+
+/* Dark mode overrides */
+[data-theme="dark"] .route-type-btn {
+    color: var(--clr-earth);
+}
+
+[data-theme="dark"] .route-type-btn:hover {
+    color: var(--clr-earth);
+}
+
+[data-theme="dark"] .route-type-btn.active {
+    color: #ffffff;
+}
+
+[data-theme="dark"] .route-type-btn.active:hover {
+    color: #ffffff;
+}
+
 .map-mode-group {
     margin-bottom: 1.25rem;
 }

@@ -116,3 +116,21 @@ Updated root README.md and src/README.md:
 - Updated architecture diagram
 - Removed stale squad inbox reference
 
+
+
+---
+
+### Route Type Toggle - Replace Disabled-Field UX (2026-04-13)
+
+**Status:** IMPLEMENTED
+**Decision:** .squad/decisions/inbox/mouth-route-toggle.md
+
+Replaced the mutual-exclusion disabled-field pattern with a **Route Type toggle** - a segmented pill control after the Start Point.
+
+**Key files changed:**
+- index.html: route-type-toggle with #routeTypeRoundTrip / #routeTypePtoP. Distance in #roundTripSection (visible), End Point in #pointToPointSection (hidden). Removed stale helpers/labels/hr.
+- route.js: Removed updateFieldStates(). Added selectRoundTrip() / selectPointToPoint(). Switching to Round Trip clears endLat/endLon/endSearch.
+- app.css: .route-type-toggle/.route-type-btn styles - full-width pill, var(--clr-earth) active bg + #ffffff text, dark mode overrides.
+
+**Dark mode pattern:** Active and active:hover use hardcoded #ffffff, not var(--clr-white) which remaps to near-black in dark mode.
+**Touch target:** min-height 44px on toggle buttons.

@@ -12,22 +12,42 @@ function updateProfileDescription() {
 profileSelect.addEventListener('change', updateProfileDescription);
 updateProfileDescription();
 
-// ── Field-state management (mutual exclusion: end point ↔ distance) ─
+// ── Route type toggle (Round Trip ↔ Point to Point) ─────────────────
 
 let lastRouteRequest = null;
 
-function updateFieldStates() {
-    const endFilled  = endLatInput.value.trim()  !== '' || endLonInput.value.trim() !== '';
-    const distFilled = distanceInput.value.trim() !== '' && parseFloat(distanceInput.value) > 0;
+const roundTripBtn       = document.getElementById('routeTypeRoundTrip');
+const pointToPointBtn    = document.getElementById('routeTypePtoP');
+const roundTripSection   = document.getElementById('roundTripSection');
+const ptoPSection        = document.getElementById('pointToPointSection');
 
-    // Disable end-point search while distance is in use; disable distance
-    // inputs while an end point is set
-    endSearch.disabled          = !endFilled && distFilled;
-    distanceInput.disabled      = endFilled;
-    distanceUnitInput.disabled  = endFilled;
+function selectRoundTrip() {
+    roundTripBtn.classList.add('active');
+    roundTripBtn.setAttribute('aria-pressed', 'true');
+    pointToPointBtn.classList.remove('active');
+    pointToPointBtn.setAttribute('aria-pressed', 'false');
+    roundTripSection.style.display = '';
+    ptoPSection.style.display = 'none';
+    // Clear end point so stale coords don't leak into round-trip requests
+    endLatInput.value  = '';
+    endLonInput.value  = '';
+    endSearch.value    = '';
 }
 
-distanceInput.addEventListener('input', updateFieldStates);
+function selectPointToPoint() {
+    pointToPointBtn.classList.add('active');
+    pointToPointBtn.setAttribute('aria-pressed', 'true');
+    roundTripBtn.classList.remove('active');
+    roundTripBtn.setAttribute('aria-pressed', 'false');
+    ptoPSection.style.display = '';
+    roundTripSection.style.display = 'none';
+}
+
+roundTripBtn.addEventListener('click', selectRoundTrip);
+pointToPointBtn.addEventListener('click', selectPointToPoint);
+
+// Default: Round Trip
+selectRoundTrip();
 
 // ── Steps toggle event listener ──────────────────────────────────────
 stepsToggle.addEventListener('click', () => {
