@@ -1,6 +1,9 @@
 # GraphHopper data directory (OSM files, graph cache, elevation data)
 data/
 
+# Local CI config test output (created by test-ci-config.ps1)
+ci-test-data/
+
 # Test output files
 test-route-response.json
 
