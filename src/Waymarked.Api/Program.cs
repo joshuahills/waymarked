@@ -188,7 +188,9 @@ static RouteRequest BuildRouteRequest(ApiRouteRequest apiRequest, double? distan
         To = apiRequest.To,
         Distance = distanceInMetres,
         Profile = apiRequest.Profile ?? "hike",
-        Elevation = elevationEnabled
+        Elevation = elevationEnabled,
+        MaxRetries = apiRequest.To == null ? 3 : 0,
+        DistanceTolerance = apiRequest.DistanceTolerance ?? 0.15
     };
 
 static async Task<(WaymarkedRouteResponse? Route, IResult? Error)> ExecuteRouteAsync(
@@ -221,7 +223,8 @@ record ApiRouteRequest(
     double[]? To = null,
     double? Distance = null,
     string? DistanceUnit = "kilometres",
-    string? Profile = "hike"
+    string? Profile = "hike",
+    double? DistanceTolerance = null
 );
 
 public partial class Program { }

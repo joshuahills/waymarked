@@ -195,6 +195,102 @@ public class GraphHopperClientTests
         var uri = capturedUris[0].ToString();
         uri.Should().Contain("round_trip.distance=10701"); // Convert.ToInt32 rounds, not truncates
     }
+
+    [Fact]
+    public async Task GetRouteAsync_RoundTrip_IncludesMaxRetriesParam()
+    {
+        var (client, capturedUris) = CreateClientWithCapture();
+
+        var request = new RouteRequest
+        {
+            From = [51.5074, -0.1278],
+            Distance = 10000
+        };
+
+        await client.GetRouteAsync(request);
+
+        capturedUris[0].ToString().Should().Contain("round_trip.max_retries=10");
+    }
+
+    [Fact]
+    public async Task GetRouteAsync_RoundTrip_RetriesUpToMaxWhenDeviationExceedsTolerance()
+    {
+        var capturedUris = new List<Uri>();
+        // Stub returns 5000m for a 10000m request — 50% deviation, well above 15% tolerance
+        var response = new RouteResponse { Paths = [new RoutePath { Distance = 5000 }] };
+        var handler = new CapturingHandler(capturedUris, JsonSerializer.Serialize(response));
+        var httpClient = new HttpClient(handler) { BaseAddress = new Uri("http://graphhopper") };
+        var client = new GraphHopperClient(httpClient, NullLogger<GraphHopperClient>.Instance);
+
+        var request = new RouteRequest
+        {
+            From = [51.5074, -0.1278],
+            Distance = 10000,
+            MaxRetries = 3,
+            DistanceTolerance = 0.15
+        };
+
+        await client.GetRouteAsync(request);
+
+        // 1 initial + 3 retries = 4 total attempts
+        capturedUris.Should().HaveCount(4);
+    }
+
+    [Fact]
+    public async Task GetRouteAsync_RoundTrip_StopsRetryingWhenDistanceWithinTolerance()
+    {
+        var capturedUris = new List<Uri>();
+        // First attempt: 5000m (50% off from 10000m — retries); second attempt: 9500m (5% off — within 15%)
+        var sequenceHandler = new SequenceHandler(capturedUris,
+        [
+            new RouteResponse { Paths = [new RoutePath { Distance = 5000 }] },
+            new RouteResponse { Paths = [new RoutePath { Distance = 9500 }] }
+        ]);
+        var httpClient = new HttpClient(sequenceHandler) { BaseAddress = new Uri("http://graphhopper") };
+        var client = new GraphHopperClient(httpClient, NullLogger<GraphHopperClient>.Instance);
+
+        var request = new RouteRequest
+        {
+            From = [51.5074, -0.1278],
+            Distance = 10000,
+            MaxRetries = 3,
+            DistanceTolerance = 0.15
+        };
+
+        var result = await client.GetRouteAsync(request);
+
+        // Should stop after 2 attempts once tolerance is met
+        capturedUris.Should().HaveCount(2);
+        result!.Paths[0].Distance.Should().BeApproximately(9500, 1);
+    }
+
+    [Fact]
+    public async Task GetRouteAsync_RoundTrip_SeedDiffersBetweenRetries()
+    {
+        var capturedUris = new List<Uri>();
+        var response = new RouteResponse { Paths = [new RoutePath { Distance = 5000 }] };
+        var handler = new CapturingHandler(capturedUris, JsonSerializer.Serialize(response));
+        var httpClient = new HttpClient(handler) { BaseAddress = new Uri("http://graphhopper") };
+        var client = new GraphHopperClient(httpClient, NullLogger<GraphHopperClient>.Instance);
+
+        var request = new RouteRequest
+        {
+            From = [51.5074, -0.1278],
+            Distance = 10000,
+            MaxRetries = 2,
+            DistanceTolerance = 0.15
+        };
+
+        await client.GetRouteAsync(request);
+
+        // Extract seeds from each captured URI and verify they differ
+        var seeds = capturedUris
+            .Select(u => System.Text.RegularExpressions.Regex.Match(u.ToString(), @"round_trip\.seed=(\d+)").Groups[1].Value)
+            .ToList();
+
+        seeds.Should().HaveCount(3);
+        seeds.Distinct().Should().HaveCountGreaterThan(1, "each retry should use a different seed");
+    }
 }
 
 /// <summary>
@@ -215,5 +311,27 @@ internal class CapturingHandler(
             Content = new StringContent(responseJson, System.Text.Encoding.UTF8, "application/json")
         };
         return Task.FromResult(response);
+    }
+}
+
+/// <summary>
+/// DelegatingHandler that returns responses from a pre-defined sequence, then repeats the last.
+/// </summary>
+internal class SequenceHandler(List<Uri> capturedUris, RouteResponse[] responses) : HttpMessageHandler
+{
+    private int _callIndex;
+
+    protected override Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken)
+    {
+        capturedUris.Add(request.RequestUri!);
+        var response = responses[Math.Min(_callIndex++, responses.Length - 1)];
+        var json = JsonSerializer.Serialize(response);
+        var httpResponse = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json")
+        };
+        return Task.FromResult(httpResponse);
     }
 }

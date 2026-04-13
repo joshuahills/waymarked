@@ -18,4 +18,17 @@ public record RouteRequest
     public bool CalcPoints { get; init; } = true;
     public bool Elevation { get; init; } = true;
     public bool PointsEncoded { get; init; } = false;
+
+    /// <summary>
+    /// Maximum number of client-side retries with a different seed when the returned
+    /// round-trip distance deviates beyond <see cref="DistanceTolerance"/>.
+    /// Zero means no retry (single attempt). Only applies to round-trip mode.
+    /// </summary>
+    public int MaxRetries { get; init; } = 0;
+
+    /// <summary>
+    /// Acceptable fractional deviation between the requested and returned round-trip
+    /// distance before a retry is triggered. Default 0.15 = 15%.
+    /// </summary>
+    public double DistanceTolerance { get; init; } = 0.15;
 }
