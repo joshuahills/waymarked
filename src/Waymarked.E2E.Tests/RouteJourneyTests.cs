@@ -51,7 +51,7 @@ public class RouteJourneyTests : IClassFixture<AspireFixture>
 
             // The Leaflet map container should be visible
             var mapDiv = page.Locator("#map");
-            await mapDiv.WaitForAsync(new LocatorWaitForOptions { Timeout = 15_000 });
+            await mapDiv.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
             (await mapDiv.IsVisibleAsync()).Should().BeTrue("the map div should be visible on load");
 
             // Plan Route button must be present
@@ -66,7 +66,7 @@ public class RouteJourneyTests : IClassFixture<AspireFixture>
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // Test 2 — Round-trip: search, plan, see stats
+    // Test 2 — Round-trip: plan route, see stats
     // ──────────────────────────────────────────────────────────────────────────
 
     [Fact]
@@ -75,17 +75,10 @@ public class RouteJourneyTests : IClassFixture<AspireFixture>
         var (playwright, browser, page) = await OpenAppAsync();
         try
         {
-            // Type into the start search box and wait for autocomplete
+            // Inject Newport, Isle of Wight coordinates directly — avoids live Nominatim call
+            await page.EvalOnSelectorAsync("#startLat", "el => el.value = '50.7017'");
+            await page.EvalOnSelectorAsync("#startLon", "el => el.value = '-1.2986'");
             await page.FillAsync("#startSearch", "Newport, Isle of Wight");
-            var firstResult = page.Locator(".autocomplete-item").First;
-            await firstResult.WaitForAsync(new LocatorWaitForOptions { Timeout = 30_000 });
-            await firstResult.ClickAsync();
-
-            // Confirm lat/lon hidden inputs are populated after selection
-            var startLat = await page.InputValueAsync("#startLat");
-            var startLon = await page.InputValueAsync("#startLon");
-            startLat.Should().NotBeNullOrEmpty("startLat should be set after picking a result");
-            startLon.Should().NotBeNullOrEmpty("startLon should be set after picking a result");
 
             // Leave end point blank → round trip. Set distance to 10 km.
             await page.FillAsync("#distance", "10");
@@ -114,7 +107,7 @@ public class RouteJourneyTests : IClassFixture<AspireFixture>
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // Test 3 — A→B route: search both ends, plan, see stats
+    // Test 3 — A→B route: set both ends, plan, see stats
     // ──────────────────────────────────────────────────────────────────────────
 
     [Fact]
@@ -123,17 +116,15 @@ public class RouteJourneyTests : IClassFixture<AspireFixture>
         var (playwright, browser, page) = await OpenAppAsync();
         try
         {
-            // Pick start
+            // Inject Newport (start) coordinates directly
+            await page.EvalOnSelectorAsync("#startLat", "el => el.value = '50.7017'");
+            await page.EvalOnSelectorAsync("#startLon", "el => el.value = '-1.2986'");
             await page.FillAsync("#startSearch", "Newport, Isle of Wight");
-            var firstStart = page.Locator(".autocomplete-item").First;
-            await firstStart.WaitForAsync(new LocatorWaitForOptions { Timeout = 30_000 });
-            await firstStart.ClickAsync();
 
-            // Pick end
+            // Inject Ryde (end) coordinates directly
+            await page.EvalOnSelectorAsync("#endLat", "el => el.value = '50.7274'");
+            await page.EvalOnSelectorAsync("#endLon", "el => el.value = '-1.1616'");
             await page.FillAsync("#endSearch", "Ryde");
-            var firstEnd = page.Locator(".autocomplete-item").First;
-            await firstEnd.WaitForAsync(new LocatorWaitForOptions { Timeout = 30_000 });
-            await firstEnd.ClickAsync();
 
             // Plan
             await page.ClickAsync("button:has-text('Plan Route')");
@@ -167,7 +158,7 @@ public class RouteJourneyTests : IClassFixture<AspireFixture>
             {
                 HasTextString = "Set Start"
             });
-            await setStartButton.First.WaitForAsync(new LocatorWaitForOptions { Timeout = 15_000 });
+            await setStartButton.First.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
             await setStartButton.First.ClickAsync();
 
             // Click the centre of the map div
