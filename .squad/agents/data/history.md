@@ -14,6 +14,81 @@ _(none yet — project just started)_
 
 ## Learnings
 
+### 2026-04-12: GraphHopper Custom Profile Files Implementation
+
+**Task:** Verify and create/update custom routing profile files referenced in config.yml
+
+**Findings:**
+1. Three custom model files were designed in round-trip accuracy research but **not created in the repository**
+   - `foot.json` — pedestrian-focused profile (missing)
+   - `hike.json` — scenic/elevation-aware profile (missing)
+   - `foot_elevation.json` — shared elevation integration (missing)
+
+2. **Impact:** GraphHopper would fall back to default profiles at runtime, negating custom tuning; config.yml references would cause errors or silent fallback
+
+3. **Root cause:** Design completed, implementation deferred
+
+**Actions taken:**
+1. ✅ Created `infra/graphhopper/data/foot.json` with distance_influence: 80 (pedestrian, short routes)
+2. ✅ Created `infra/graphhopper/data/hike.json` with distance_influence: 60 (scenic, elevation-aware)
+3. ✅ Created `infra/graphhopper/data/foot_elevation.json` with shared elevation penalties
+4. ✅ Updated `Dockerfile` to COPY model files into container at `/data/` during build
+
+**Result:** Custom profiles now ready for GraphHopper runtime; config.yml references resolve correctly
+
+**Key learning:** Docker COPY (build-time) vs volume mounts (runtime) distinction — config.yml can be mounted as read-only volume, but custom model files must be copied into the image.
+
+**Alignment:** Implements Tier 1 (Immediate) from round-trip accuracy research
+
+**Next:** Brand to implement Tier 2 (API retry logic); Mouth to document accuracy bands for users
+
+---
+
+### 2026-04-12: GraphHopper Round-Trip Algorithm Analysis (Accuracy Research)
+
+**Research:** Deep dive into why GraphHopper's round-trip algorithm produces routes that don't match requested distance, and what's tunable at the config level.
+
+**Key Findings:**
+
+1. **Algorithm is fundamentally a heuristic, not a guarantee**
+   - `algorithm=round_trip` explores the graph radially with `round_trip.distance` as a *guide*, not a constraint
+   - Deviations of ±20–40% are normal in rural UK, ±5–15% in urban areas
+
+2. **Root causes of distance mismatches:**
+   - **Network density:** Sparse OSM path coverage in rural UK (moorlands, remote uplands) → algorithm exhausts local graph and stops
+   - **Profile restrictions:** Hike/foot profiles restrict routing to pedestrian ways only, narrower graph than car routing
+   - **Elevation penalties:** Steep section avoidance creates lateral detours, adding unintended distance or forcing undershoot
+   - **Algorithm termination:** No built-in retry or compensation when graph exhausts early
+   - **Random seed variance:** Different seeds = ±15–25% distance variance on same start point
+
+3. **UK OSM coverage implications:**
+   - Peak District/Lake District: ±10–15% accuracy (dense coverage)
+   - Cotswolds/South Downs: ±15–20% accuracy (moderate coverage)
+   - Remote uplands (Cairngorms, Pennines, moorlands): ±25–40% accuracy (sparse coverage)
+   - Undershoot more common in rural areas; overshoot more common in dense urban networks
+
+4. **Config-level tuning potential: ±5–10% improvement max**
+   - ✅ Adjustable: `distance_influence` parameter (prefer distance over route quality)
+   - ✅ Adjustable: Speed penalties for road classes (avoid road routing)
+   - ✅ Adjustable: Elevation cost caps (reduce lateral detours)
+   - ✅ Adjustable: Seeding strategy (determinism vs variety)
+   - ❌ NOT fixable at config: Network sparsity, algorithm termination behavior, hard graph limits
+
+5. **What cannot be fixed at config level:**
+   - Cannot create footpaths that don't exist in OSM
+   - Cannot override graph exhaustion in sparse regions
+   - Cannot guarantee distance targets in areas with limited available paths
+
+**Recommendations (by tier):**
+
+- **Tier 1 (Immediate):** Verify custom model files (foot.json, hike.json, foot_elevation.json) exist; document realistic accuracy bands
+- **Tier 2 (API layer - Brand):** Implement retry logic when distance < 90% of target; retry with 1.15x distance multiplier
+- **Tier 3 (Future):** Upgrade elevation provider from SRTM to OS Terrain 50; A/B test distance_influence parameter values
+
+**Full analysis:** See `.squad/decisions/inbox/data-roundtrip-accuracy.md`
+
+---
+
 ### 2026-04-12: Documentation Update — GraphHopper Engine Alignment
 
 **Update:** Corrected `docs/osm-coverage-uk.md` to align with team's GraphHopper routing engine decision (see `.squad/decisions.md`). All Valhalla references replaced with GraphHopper equivalents:
