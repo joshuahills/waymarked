@@ -178,41 +178,27 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      # GraphHopper has a custom Dockerfile — build + push via docker/build-push-action
-      - name: Build & push GraphHopper image
-        uses: docker/build-push-action@v6
-        with:
-          context: infra/graphhopper
-          push: true
-          tags: ghcr.io/${{ github.repository }}/graphhopper:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      # .NET SDK container publishing — no Dockerfile needed; SDK builds OCI images natively
-      - name: Build & push API image
+      - name: Install Aspire CLI
         run: |
-          dotnet publish src/Waymarked.Api/Waymarked.Api.csproj \
-            --os linux --arch x64 \
-            /t:PublishContainer \
-            /p:ContainerRegistry=ghcr.io \
-            /p:ContainerRepository=${{ github.repository }}/waymarked-api \
-            /p:ContainerImageTag=latest \
-            --configuration Release
+          curl -sSL https://aspire.dev/install.sh | bash
+          echo "$HOME/.aspire/bin" >> $GITHUB_PATH
 
-      - name: Build & push Web image
-        run: |
-          dotnet publish src/Waymarked.Web/Waymarked.Web.csproj \
-            --os linux --arch x64 \
-            /t:PublishContainer \
-            /p:ContainerRegistry=ghcr.io \
-            /p:ContainerRepository=${{ github.repository }}/waymarked-web \
-            /p:ContainerImageTag=latest \
-            --configuration Release
+      # aspire do push builds all container images (graphhopper Dockerfile + .NET SDK
+      # container publishing for api/web) and pushes them to GHCR in one command.
+      - name: Build & push all images
+        env:
+          REGISTRY_ENDPOINT: ghcr.io
+          REGISTRY_REPOSITORY: ${{ github.repository }}
+        run: aspire do push
 
-      # Copy the Aspire-generated compose file and Caddyfile to the server.
+      # Regenerate the compose file fresh from the AppHost model.
+      - name: Generate Docker Compose artifacts
+        env:
+          REGISTRY_ENDPOINT: ghcr.io
+          REGISTRY_REPOSITORY: ${{ github.repository }}
+        run: aspire publish --output-path infra/deploy
+
+      # Copy the freshly generated compose file and Caddyfile to the server.
       # The server's .env (created by setup.sh) is never overwritten by CI —
       # it contains server-specific bind mount paths and static :latest image tags.
       - name: Copy deploy files to server
