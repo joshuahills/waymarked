@@ -12,11 +12,20 @@
 
 param(
     [string]$TempDir = "$PSScriptRoot\ci-test-data",
-    [int]$TimeoutSeconds = 300
+    [int]$TimeoutSeconds = 300,
+    [string]$ContainerEngine = ""   # auto-detected: podman > docker
 )
 
 $ErrorActionPreference = "Stop"
 $repo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+
+# Auto-detect container engine (prefer podman, fall back to docker)
+if (-not $ContainerEngine) {
+    if (Get-Command podman -ErrorAction SilentlyContinue) { $ContainerEngine = "podman" }
+    elseif (Get-Command docker -ErrorAction SilentlyContinue) { $ContainerEngine = "docker" }
+    else { Write-Error "Neither podman nor docker found in PATH."; exit 1 }
+}
+Write-Host "==> Using container engine: $ContainerEngine" -ForegroundColor Cyan
 
 Write-Host "==> CI config test" -ForegroundColor Cyan
 Write-Host "    Temp data dir: $TempDir"
@@ -39,17 +48,17 @@ if (-not (Test-Path $pbf)) {
     Write-Host "==> IoW PBF already present — skipping download" -ForegroundColor Green
 }
 
-# 3. Build the Docker image
-Write-Host "==> Building graphhopper-ci Docker image..." -ForegroundColor Yellow
-docker build -t graphhopper-ci "$PSScriptRoot"
+# 3. Build the container image
+Write-Host "==> Building graphhopper-ci image..." -ForegroundColor Yellow
+& $ContainerEngine build -t graphhopper-ci "$PSScriptRoot"
 Write-Host "==> Image built" -ForegroundColor Green
 
 # 4. Remove any stale container
-docker rm -f gh-ci-test 2>&1 | Out-Null
+& $ContainerEngine rm -f gh-ci-test 2>&1 | Out-Null
 
 # 5. Start GraphHopper with CI config
 Write-Host "==> Starting GraphHopper with CI config (no elevation)..." -ForegroundColor Yellow
-docker run -d --name gh-ci-test `
+& $ContainerEngine run -d --name gh-ci-test `
     -v "${TempDir}:/data" `
     -v "${TempDir}/config.yml:/data/config.yml:ro" `
     -p 8989:8989 `
@@ -79,8 +88,8 @@ if (-not $ready) {
     Write-Host ""
     Write-Host "ERROR: GraphHopper did not become ready within ${TimeoutSeconds}s" -ForegroundColor Red
     Write-Host "--- Container logs ---" -ForegroundColor Red
-    docker logs gh-ci-test
-    docker rm -f gh-ci-test | Out-Null
+    & $ContainerEngine logs gh-ci-test
+    & $ContainerEngine rm -f gh-ci-test | Out-Null
     exit 1
 }
 
@@ -97,8 +106,8 @@ Write-Host "    Route found: ${distKm} km, ~${timeMin} min" -ForegroundColor Gre
 
 # 7. Cleanup
 Write-Host "==> Stopping and removing container..." -ForegroundColor Yellow
-docker stop gh-ci-test | Out-Null
-docker rm gh-ci-test | Out-Null
+& $ContainerEngine stop gh-ci-test | Out-Null
+& $ContainerEngine rm gh-ci-test | Out-Null
 
 Write-Host ""
 Write-Host "SUCCESS — CI config works correctly." -ForegroundColor Green
