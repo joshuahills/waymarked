@@ -37,7 +37,32 @@ Implemented dark mode via CSS tokens + localStorage + OS preference detection. T
 
 ---
 
-## Learnings
+### Geolocation — "Use My Location" (2026-04-13)
+
+**Status:** IMPLEMENTED  
+**Commit:** (this work)
+
+Added "Use my location" (crosshair icon) button next to the Start Point field.
+
+**Key Files:**
+- `src/Waymarked.Web/wwwroot/index.html` — `.search-with-geoloc` wrapper, `#geolocBtn`, `#geolocError`
+- `src/Waymarked.Web/wwwroot/js/geolocation.js` — New file; all geolocation logic
+- `src/Waymarked.Web/wwwroot/css/app.css` — Button, error, and "you are here" marker styles
+
+**What it does:**
+- Calls `navigator.geolocation.getCurrentPosition()` on click
+- On success: reverse-geocodes via Nominatim, calls `setStartPoint()`, pans map to zoom 14, places pulsing blue "you are here" dot
+- On error: shows friendly inline error with `role="alert"` for a11y
+- On unsupported browsers: hides button entirely
+
+**Dark mode gotcha (same pattern as buttons):** The `.geoloc-btn:hover` pseudo-class has higher specificity than `[data-theme="dark"] button`, so it wins in dark mode and can revert to dark icon colour. Added explicit `[data-theme="dark"] .geoloc-btn:hover { color: #ffffff }` override.
+
+**Touch target:** Button is exactly `44×44px` — meets mobile HIG minimum.
+
+**"You are here" marker:** Blue pulsing dot (`#007AFF`, CSS animation `yah-pulse`) — distinct from route S/E markers (green/red pin icons). Implemented as a Leaflet DivIcon with CSS classes.
+
+**Script load order:** `map.js → geocoder.js → geolocation.js → markers.js → ...` (geolocation.js depends on `reverseGeocode`, `coordLabel`, `setStartPoint` from geocoder.js, and `map` global from map.js)
+
 
 ### Dark Mode Button Styling Fix (2026-04-13)
 

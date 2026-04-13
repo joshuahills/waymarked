@@ -635,6 +635,125 @@ button:disabled {
     color: #ffffff;
 }
 
+/* ── Geolocation button row ─────────────────────────────────────────── */
+.search-with-geoloc {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-start;
+}
+
+.search-with-geoloc .search-wrapper {
+    flex: 1;
+    min-width: 0;
+}
+
+/* ── "Use my location" button ───────────────────────────────────────── */
+.geoloc-btn {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    padding: 0;
+    background: var(--clr-white);
+    color: var(--clr-earth);
+    border: 1.5px solid var(--clr-border);
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+/* Suppress global button arrow */
+.geoloc-btn::after { content: ''; }
+
+.geoloc-btn:hover {
+    background: var(--clr-earth-lt);
+    border-color: var(--clr-earth);
+    color: var(--clr-earth);
+    transform: none;
+    box-shadow: none;
+}
+
+.geoloc-btn:active {
+    transform: none;
+    box-shadow: none;
+}
+
+.geoloc-btn--loading {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.geoloc-btn--loading svg {
+    animation: geoloc-spin 1s linear infinite;
+}
+
+@keyframes geoloc-spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
+/* ── Geolocation error message ──────────────────────────────────────── */
+.geoloc-error {
+    font-size: 0.78rem;
+    color: #c0392b;
+    margin-top: 0.35rem;
+    display: none;
+}
+
+.geoloc-error.visible {
+    display: block;
+}
+
+/* ── "You are here" map marker ──────────────────────────────────────── */
+.you-are-here-icon {
+    background: transparent !important;
+    border: none !important;
+}
+
+.yah-outer {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(0, 122, 255, 0.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: yah-pulse 2s ease-in-out infinite;
+}
+
+.yah-inner {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: #007AFF;
+    border: 2px solid #ffffff;
+    box-shadow: 0 0 5px rgba(0, 122, 255, 0.55);
+}
+
+@keyframes yah-pulse {
+    0%, 100% { transform: scale(1);   opacity: 1;   }
+    50%       { transform: scale(1.4); opacity: 0.65; }
+}
+
+/* ── Dark mode: geolocation button ─────────────────────────────────── */
+[data-theme="dark"] .geoloc-btn {
+    /* Inherits color:#ffffff from [data-theme="dark"] button — readable on dark bg */
+    border-color: var(--clr-border);
+}
+
+[data-theme="dark"] .geoloc-btn:hover {
+    background: #243320;
+    border-color: var(--clr-earth);
+    color: #ffffff;
+}
+
+[data-theme="dark"] .geoloc-error {
+    color: #f08080;
+}
+
 /* ── Dark mode: Leaflet control overrides ───────────────────────────── */
 [data-theme="dark"] .leaflet-bar a,
 [data-theme="dark"] .leaflet-control-zoom a {
