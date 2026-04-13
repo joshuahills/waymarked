@@ -129,3 +129,28 @@ Reads clearly at all zoom levels against OpenTopoMap tiles. The dark outline (#1
 
 **Commit:** 24309ba
 
+---
+
+### Dark Mode Toggle (2026-12-04)
+
+**Decision:** Implemented dark mode via CSS custom property overrides on `[data-theme="dark"]` with OS preference detection, localStorage persistence, and a 🌙/☀️ toggle button in the header.
+
+**Key Files:**
+- `src/Waymarked.Web/wwwroot/css/app.css` — Added `[data-theme="dark"]` token block + Leaflet control overrides + hardcoded colour fixes
+- `src/Waymarked.Web/wwwroot/index.html` — Anti-FOUC inline script in `<head>`, `#theme-toggle` button in `<header>`
+- `src/Waymarked.Web/wwwroot/js/theme.js` — Toggle wiring, localStorage persistence, aria-label sync
+
+**Approach:**
+- CSS tokens (`--clr-stone`, `--clr-white`, `--clr-ink`, `--clr-muted`, `--clr-border`, `--clr-earth-lt`, `--clr-trail-lt`) redefined under `[data-theme="dark"]` on `<html>` — all tokenised surfaces update automatically
+- Anti-FOUC inline script runs before any paint: reads `localStorage.getItem('theme')`, falls back to `matchMedia('prefers-color-scheme: dark')`
+- Toggle button lives in the header (right edge via `margin-left:auto`) — uses emoji icons (🌙/☀️) with `aria-label` that flips on each press
+- Hardcoded colours that escaped the token system were patched individually: select SVG arrow stroke, error banner, steps-toggle hover, mode-btn.active-off hover
+
+**Leaflet dark overrides:**
+- Zoom bar, attribution, popup wrapper/tip all receive dark backgrounds and light text via `.leaflet-*` class overrides scoped to `[data-theme="dark"]`
+
+**Known limitation:**
+- OpenTopoMap raster tiles are fixed light-coloured images served from a CDN — they cannot be darkened. The map tile area remains visually light in dark mode. This is expected and acceptable. Documented in decisions.
+
+**Commit:** 1ae475d
+

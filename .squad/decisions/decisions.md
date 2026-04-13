@@ -132,6 +132,401 @@ SRTM (90m) vs OS Terrain 50 (50m) accuracy difference is significant for UK hill
 
 ---
 
+## Data: UK OSM Footpath Coverage Assessment — Team Recommendations
+
+**From:** Data (GIS Engineer)  
+**Date:** 2026-04-12  
+**Status:** For Review  
+**Audience:** Mikey (Lead), Brand (Backend), Josh (Product)
+
+### Summary
+
+Completed UK OSM footpath coverage assessment (see `docs/osm-coverage-uk.md`). Key finding: **OSM + Valhalla sufficient for MVP & production walking route planner**. Identified critical application-layer gaps and recommended development data strategy.
+
+### Key Recommendations
+
+#### 1. Development Data Strategy ✅ **DECISION READY**
+
+**Recommendation:** Use **Scotland extract** for local dev spike; **full GB extract** for production.
+
+**Rationale:**
+- Scotland extract (`scotland-latest.osm.pbf`, ~100 MB): Fast iteration (Valhalla builds in <5 min), simplified access logic (Right to Roam), established routes (West Highland Way) for sanity checks
+- Full GB extract (`great-britain-latest.osm.pbf`, ~1.5 GB): Comprehensive 3-nation coverage, scales to modest VPS, weekly update cadence via Geofabrik
+
+**URLs:**
+- Dev: https://download.geofabrik.de/europe/scotland-latest.osm.pbf
+- Prod: https://download.geofabrik.de/europe/great-britain-latest.osm.pbf
+
+**Next step:** Pass to Mikey (Backend) for spike implementation.
+
+#### 2. Valhalla Application-Layer Gaps ⚠️ **DESIGN DECISION NEEDED**
+
+Valhalla pedestrian costing does NOT natively support several hiking features. Application layer must implement:
+
+| Feature | Status | App Layer Requirement |
+|---------|--------|----------------------|
+| **Difficulty filtering** (`sac_scale` T1–T6) | ❌ Unsupported | Parse OSM `sac_scale` tag; estimate from elevation if absent; filter route alternatives by difficulty |
+| **Seasonal closures** (lambing, grouse, nesting) | ❌ Unsupported | Maintain curated closure database; display warnings on route UI |
+| **Round-trip routing** | ❌ Unsupported | Implement algorithm (e.g., reverse-path A*) or restrict to open-ended routes |
+| **Permissive path warnings** | ⚠️ Partial | Flag paths tagged `foot=permissive` in UI: "This section uses permissive paths (may be revoked by owner)" |
+| **CRoW access land routing** | ⚠️ Partial | Store as GeoJSON zones; overlay on map; warn users on routes crossing zones |
+
+**Design Question:** Should Waymarked v1.0 MVP support difficulty filtering and seasonal closures, or defer to v1.1?
+
+#### 3. UK PROW Coverage Quality ✅ **FYI / EXPECTATIONS SETTING**
+
+**Regional variation:**
+- **Excellent:** Lake District, Peak District, South Downs, South West Coast (>80% PROW designated tags)
+- **Good:** Welsh uplands, major long-distance paths (Pennine Way, Coast-to-Coast)
+- **Fair:** Remote rural areas (Scottish Borders, mid-Wales, East Anglia) — user may find limited options
+- **Coverage:** ~40-60% of English/Welsh paths tagged with `designation` tag; ~30-40% fewer paths in Scotland (Right to Roam model)
+
+**Implication for product:** Waymarked will excel for popular UK walking regions; edges (remote areas, lesser-known local paths) may have gaps. Plan user expectations accordingly in product docs.
+
+#### 4. Data Contribution Opportunity 🔮 **FUTURE ENHANCEMENT**
+
+**Opportunity:** MapThePaths project successfully conflated 149 UK authority PROW datasets into OSM (~60,000 paths). Waymarked could contribute:
+
+1. **Seasonal closure tagging:** Partner with Scottish Wildlife Trust, grouse estates, MoD to systematically tag `access:conditional` on paths
+2. **CRoW zone mapping:** Map access land boundaries as GeoJSON/OSM relations (currently unmapped)
+3. **Surface/difficulty refinement:** Crowdsource `sac_scale` and `trail_visibility` tagging on untagged paths
+
+**Impact:** Improves Waymarked's own routing quality + benefits broader OSM community.
+
+### Action Items
+
+- **Mikey (Backend):** Spike Valhalla deployment with Scotland extract; test custom costing (`use_roads`, `use_hills`)
+- **Brand (Backend):** Design app layer for difficulty filtering, seasonal warnings, round-trip algorithm
+- **Data (me):** Stand by for regional coverage analysis (e.g., which auth boundaries have poorest PROW tagging?)
+- **Josh (Product):** Review expectations (regional variation, v1.0 vs v1.1 feature list)
+
+**Full assessment:** See `docs/osm-coverage-uk.md` — living reference, updated as findings emerge.
+
+---
+
+## GraphHopper Round-Trip Algorithm: Accuracy Analysis & Config Tuning Recommendations
+
+**Date:** 2026-04-12  
+**Author:** Data (GIS Engineer)  
+**Audience:** Team (Brand, Mouth, Chunk); specifically flagged items for Brand (API)  
+**Status:** RESEARCH COMPLETE — ACTIONABLE RECOMMENDATIONS READY
+
+### Executive Summary
+
+GraphHopper's round-trip algorithm is fundamentally a **heuristic distance guide, not a guarantee**. Deviations of ±20–40% from the requested distance are normal, especially in sparse networks. The UK's rural footpath coverage exacerbates this: sparse OSM network density forces the algorithm to either overshoot (taking longer routes to "fill distance") or undershoot (exhausting nearby paths too quickly).
+
+**The core issue is NOT a config bug — it's a mismatch between user expectations and algorithm capability.** Config-level tuning can improve accuracy by ±5–10%, but fundamentally cannot overcome network sparsity. The solution lives in three layers:
+
+1. **Config tuning** (±5–10% improvement) — profile weighting, algorithm randomness
+2. **Algorithm resilience** (Brand's API layer) — retry with adjusted distance, accept tolerance bands
+3. **UX honesty** (Mouth's frontend) — show "Expected range" vs "Target"
+
+### Key Findings
+
+#### Round-Trip Distance Variance by Region
+
+| Region | OSM Density | Typical Distance Accuracy | Affected Radii |
+|--------|-------------|---------------------------|-----------------|
+| Lake District | Dense | ±10–15% | 5–15 km tours |
+| Peak District | Dense | ±10–15% | 5–15 km tours |
+| South Downs | Moderate–Good | ±15–20% | 5–20 km tours |
+| Cotswolds | Moderate | ±20–25% | 5–25 km tours |
+| Remote Uplands (Cairngorms, Pennines) | Sparse | ±25–40% | 10–50 km tours |
+| Agricultural flatlands | Variable | ±20–30% | 5–20 km tours |
+
+**Key finding:** Users requesting 50 km round-trips in sparse areas will **almost always undershoot** (algorithm exhausts local graph). Users requesting 5 km in dense areas are more likely to overshoot (algorithm fills distance with longer detours).
+
+### Recommendation Tiers
+
+#### Tier 1: Immediate Actions (High Impact)
+
+1. **Verify custom model files exist**
+   - Confirm `foot.json`, `hike.json`, `foot_elevation.json` are present in Docker build
+   - If missing, create them with sensible defaults
+
+2. **Update elevation provider: SRTM → OS Terrain 50**
+   - Current: `graph.elevation.provider: srtm`
+   - Recommended: Add OS Terrain 50 DEM to the `/data` mount, configure GraphHopper to use it
+   - Impact: ±3% better accuracy in UK, much better elevation representation
+
+3. **Document expected accuracy band**
+   - Create API-level documentation: "Round-trip routes achieve ±20% of requested distance in rural areas, ±10% in urban areas"
+   - This sets honest user expectations
+
+#### Tier 2: API-Layer Resilience (Brand's Responsibility)
+
+1. **Implement retry logic in GraphHopperClient**
+   - If returned distance < 90% of requested, automatically retry with `distance * 1.15`
+   - If still < 85%, accept the result and flag to frontend as "undershoot"
+   - Limit retries to 2 max (avoid infinite loops in sparse regions)
+
+2. **Add tolerance validation in WaymarkedRouteResponse**
+   - Return `DistanceDeviation` field: `(actual - requested) / requested`
+   - Frontend can show "📍 Route is 8.5 km (Target was 10 km)"
+   - Flag severe deviations (>25%) with a warning
+
+3. **Make profile selection intelligent**
+   - For short distances (< 5 km), use "foot" profile (safer in sparse networks)
+   - For longer distances (> 20 km), use "hike" profile (elevation costs are less restrictive)
+
+#### Tier 3: Future Enhancements (Lower Priority)
+
+1. **Implement A/B testing for distance_influence parameter**
+2. **Partner with MapThePaths project** for pre-processed OSM extracts
+3. **Create region-specific profiles** with tuned elevation penalties
+
+---
+
+## GraphHopper Custom Profile Files: Verification & Implementation
+
+**Date:** 2026-04-12  
+**Author:** Data (GIS Engineer)  
+**Status:** COMPLETED  
+**Decision:** Created missing GraphHopper custom profile JSON files with distance_influence tuning
+
+### Problem Statement
+
+The `config.yml` referenced three custom routing profile model files (`foot.json`, `hike.json`, `foot_elevation.json`) but these files did not exist in the repository. This would cause GraphHopper to fail silently or fall back to defaults at runtime, negating the custom routing profiles configured for UK walking/hiking use.
+
+### Solution Implemented
+
+#### Custom Model Files Created
+
+**`infra/graphhopper/data/foot.json`** — Pedestrian-focused profile
+- Penalises motorway/trunk routes (limit_to: 1)
+- Reduces speed on primary/secondary roads (multiply_by: 0.7)
+- Prioritises footways (1.5x) and paths (1.2x)
+- **distance_influence: 80** — balances distance accuracy with route quality
+- Suitable for urban/suburban walking; good for short routes (< 10 km)
+
+**`infra/graphhopper/data/hike.json`** — Scenic, elevation-aware profile
+- Steep slope penalties: > 15° (0.6x speed), 10–15° (0.8x speed)
+- Hiking-rated path bonus (hiking_rating >= 3: 1.4x priority)
+- Bridleway bonus (1.2x priority) for bridleway preference
+- **distance_influence: 60** — sacrifices some distance accuracy for terrain preference
+- Suitable for longer/scenic routes (8+ km); elevation-conscious
+
+**`infra/graphhopper/data/foot_elevation.json`** — Elevation integration (shared by both profiles)
+- Speed cap on very steep slopes (average_slope > 12: limit_to 2)
+- Prevents algorithm from avoiding steep sections via extreme lateral detours
+
+#### Dockerfile Updated
+
+Added COPY instructions to ensure the custom model files are included in the container image.
+
+### Files Modified
+
+| File | Change | Reason |
+|------|--------|--------|
+| `infra/graphhopper/data/foot.json` | Created | Pedestrian-focused profile |
+| `infra/graphhopper/data/hike.json` | Created | Hiking/scenic profile |
+| `infra/graphhopper/data/foot_elevation.json` | Created | Shared elevation logic |
+| `infra/graphhopper/Dockerfile` | Updated | Added COPY for model files |
+
+---
+
+## Round-Trip Distance Accuracy — Findings & Improvements
+
+**Author:** Brand (Backend Dev)  
+**Date:** 2026-04-13  
+**Status:** Implemented (client-side) | Pending (server-side — needs Data)
+
+### Implementation Summary
+
+| Improvement | Scope | Status |
+|---|---|---|
+| `round_trip.max_retries=10` | Client | ✅ Implemented |
+| Client-side retry on deviation | Client | ✅ Implemented |
+| Seed diversity across retries | Client | ✅ Implemented |
+| `distanceTolerance` API param | API | ✅ Implemented |
+| OSM network coverage validation | Data | ⏳ Needs Data |
+| Routing profile weight tuning | Infra/Data | ⏳ Needs Data |
+| Elevation-corrected distance | Product decision | ⏳ TBD |
+| Multi-alternative selection | Client (future) | ⏳ Not started |
+
+### Client-Side Changes (Commit: 8dd8051)
+
+1. **GraphHopper `round_trip.max_retries=10`**
+   - Tells GraphHopper to try 10 candidate routes internally per call (up from default 3)
+   - Small extra CPU cost on GH side but gives more chances to find a better match
+
+2. **Client-Side Retry Loop**
+   - Retries round-trip requests with fresh random seed if returned distance deviates > `DistanceTolerance` (default 15%)
+   - `MaxRetries = 3` for all round-trip requests (up to 4 total attempts)
+   - Each retry generates new seed for different route shapes
+   - Early exit when tolerance met (no wasted calls)
+
+3. **`DistanceTolerance` API Parameter**
+   - Clients can pass `distanceTolerance` (fractional, e.g. `0.10` = ±10%) in route request
+   - Defaults to `0.15` (±15%). Tighter values trigger more retries; looser values return faster
+
+4. **Unit Tests Added**
+   - `GetRouteAsync_RoundTrip_IncludesMaxRetriesParam` — verifies query param
+   - `GetRouteAsync_RoundTrip_RetriesUpToMaxWhenDeviationExceedsTolerance` — verifies 4 attempts
+   - `GetRouteAsync_RoundTrip_StopsRetryingWhenDistanceWithinTolerance` — verifies early exit
+   - `GetRouteAsync_RoundTrip_SeedDiffersBetweenRetries` — verifies seed diversity
+
+### Data's Input Needed
+
+1. **OSM Path Network Density** — Validate footpath coverage in key UK regions; flag areas where round-trip routing unreliable
+2. **GraphHopper Routing Profile Tuning** — Custom costing weights in `infra/graphhopper/config.yml` to prefer longer connecting paths
+3. **Elevation-Aware Distance** — Whether to correct for grade in hilly terrain (product decision)
+4. **Alternative Route Candidates** — Future: request 3 alternatives per call, select closest to target distance
+
+---
+
+## Test Coverage: Round-Trip Accuracy Improvements
+
+**From:** Chunk (Tester)  
+**Date:** 2026-04-13  
+**Relates to:** Brand's round-trip accuracy improvements (max_retries, client-side retry loop, distanceTolerance API param)  
+**Status:** All tests passing (60/60)
+
+### Coverage Summary
+
+| Scenario | Test Name | Result |
+|---|---|---|
+| Happy path — within tolerance first try | `NoRetryWhenFirstAttemptWithinTolerance` | ✅ |
+| Retry on undershoot, stops early | `StopsRetryingWhenDistanceWithinTolerance` | ✅ |
+| Retry exhaustion → best route returned | `RetriesUpToMaxWhenDeviationExceedsTolerance` | ✅ |
+| Custom distanceTolerance respected | `RespectsCustomTolerance` | ✅ |
+| `round_trip.max_retries=10` in query string | `IncludesMaxRetriesParam` | ✅ |
+| Seed changes on each retry | `SeedDiffersBetweenRetries` | ✅ |
+| A→B routes bypass retry logic entirely | `AbRoute_DoesNotRetryRegardlessOfDistance` | ✅ |
+| API accepts `distanceTolerance` parameter | `Post_ApiRoutes_RoundTrip_AcceptsCustomDistanceTolerance` | ✅ |
+
+### Test Details
+
+- Newly added: `NoRetryWhenFirstAttemptWithinTolerance`, `RespectsCustomTolerance`, `AbRoute_DoesNotRetryRegardlessOfDistance` at unit level
+- Also: API parameter smoke test (`Post_ApiRoutes_RoundTrip_AcceptsCustomDistanceTolerance`)
+- Seed diversity test uses `Distinct()` — probabilistic but reliable (collision probability 1-in-2³¹ per pair)
+
+---
+
+## 2026-04-13: UI & Routing Improvement Backlog
+
+**By:** Josh Hills (via Copilot)  
+**Status:** Backlog — not yet started
+
+### Items
+
+1. **Route line contrast** — The blue polyline on OpenTopoMap tiles lacks sufficient visual contrast. Improve visibility (colour, weight, or outline/shadow treatment).
+
+2. **Dark mode** — Add a dark UI theme to the frontend. Scope TBD (CSS custom properties toggle, system preference detection, or manual toggle).
+
+3. **Round-trip distance accuracy** — GraphHopper's `round_trip` algorithm doesn't reliably produce routes matching the requested distance. Requires collaboration between Brand (routing client/API) and Data (OSM coverage, GraphHopper profile tuning, algorithm parameters).
+
+4. **Geolocation — use current location as start/end point** — Use the browser Geolocation API to let users set their current location as the route start or end point, replacing the manual coordinate/address entry for that field. Mouth owns the UI integration; Brand may need to validate/accept the coordinates.
+
+---
+
+## 2026-04-13: Backlog — User accounts, saved routes, and sharing
+
+**Requested by:** Josh Hills  
+**Captured by:** Coordinator
+
+### Items
+
+1. **User login / authentication**
+   - Users need accounts to save and share routes
+   - Auth strategy TBD (email/password, OAuth, passkeys)
+   - Brand owns implementation; Coordinator to facilitate auth strategy decision when prioritised
+
+2. **Saving routes**
+   - Authenticated users can save named routes to their account
+   - Requires database schema (Brand) and API endpoints (Brand)
+   - UI for saved routes list and save/delete actions (Mouth)
+
+3. **Sharing routes between users**
+   - Shareable link or direct share-to-user mechanism (scope TBD)
+   - Requires decision on share model: public link vs. user-to-user vs. both
+   - Touches API (Brand), frontend (Mouth), and potentially email/notification (TBD)
+
+### Notes
+
+- These three items are tightly coupled — auth is a prerequisite for the others
+- Implementation order: auth → save → share
+- Mikey should be involved in scoping the auth strategy before Brand starts
+- Data stack decision (currently open) may affect route persistence choices
+
+---
+
+## 2026-04-13T21:02: User directive — Distance display
+
+**By:** Josh Hills (via Copilot)  
+**What:** Do NOT show achieved distance vs requested distance in the UI. Mouth should not implement a "Route achieved: X km (Target was Y km)" display or any equivalent distance deviation feedback on the frontend.  
+**Why:** User request — captured for team memory
+
+---
+
+## Dark Mode Implementation
+
+**Status:** IMPLEMENTED | **Owner:** Mouth (Frontend Dev) | **Date:** 2026-04-13  
+**Commit:** 1ae475d
+
+### Decision
+
+Add dark mode to the Waymarked frontend using CSS custom property overrides, OS preference detection, localStorage persistence, and a header toggle button.
+
+### Implementation
+
+#### Theming Layer
+- All colours already used CSS custom properties (`--clr-*` tokens in `:root`)
+- Added `[data-theme="dark"]` block on `<html>` redefining seven tokens:
+  - `--clr-stone` (sidebar bg): `#f4f1ec` → `#1c1c20`
+  - `--clr-white` (input/panel bg): `#ffffff` → `#2a2a2e`
+  - `--clr-ink` (body text): `#1c1c1e` → `#e8e8ea`
+  - `--clr-muted` (muted text): `#6b6b6b` → `#9a9a9a`
+  - `--clr-border` (dividers): `#ddd8d0` → `#3c3c40`
+  - `--clr-earth-lt` (steps-toggle bg): `#e8f5e4` → `#1a2d18`
+  - `--clr-trail-lt` (trail light): `#fdf0e8` → `#2a1810`
+- Brand greens (`--clr-earth`, `--clr-earth-dk`, `--clr-trail`) retained — the header and primary buttons stay green for brand continuity in both modes
+
+#### Anti-FOUC
+- Inline `<script>` in `<head>` (before any CSS paints): reads `localStorage.getItem('theme')`, falls back to `matchMedia('prefers-color-scheme: dark')`, sets `data-theme` on `<html>` before first render
+- No flash of wrong theme on load
+
+#### Toggle Button
+- `<button id="theme-toggle" class="theme-toggle">` in `<header>`, right-aligned via `margin-left:auto`
+- Uses emoji icons: 🌙 (currently light) / ☀️ (currently dark)
+- `aria-label` flips between "Switch to dark mode" and "Switch to light mode" on each press
+
+#### JS (`js/theme.js`)
+- IIFE runs after DOM is ready
+- Reads current theme from `data-theme` attribute, applies correct icon/label
+- On click: flips theme, updates attribute, persists to `localStorage`
+
+#### Hardcoded Colour Patches
+- Select `<svg>` arrow stroke (`%236b6b6b` → `%239a9a9a`)
+- Error banner (red tones → dark red surface)
+- Steps-toggle hover (`#d4ecce` → `#223d20`)
+- mode-btn.active-off hover (`#555` → `#888`)
+
+#### Leaflet Controls
+Scoped overrides for `[data-theme="dark"]`:
+- Zoom bar (`.leaflet-bar a`, `.leaflet-control-zoom a`): dark bg, light text, dark border
+- Attribution (`.leaflet-control-attribution`): translucent dark bg, muted text, green links
+- Popups (`.leaflet-popup-content-wrapper`, `.leaflet-popup-tip`): dark bg, light text
+
+### Known Limitation: OpenTopoMap Tile Colour
+
+**OpenTopoMap raster tiles cannot be darkened.** The tiles are pre-rendered bitmap images served from a CDN (`{s}.tile.opentopomap.org`). There is no dark-mode variant available. The map tile viewport will remain visually light regardless of the active theme.
+
+This is **expected and acceptable** for the current MVP. The UI chrome (sidebar, header, controls, panels) themes correctly. The route polyline (magenta `#E0007A`) is readable against both light tiles and the dark sidebar.
+
+#### Future Mitigation Options (if needed)
+
+1. Switch to a **vector tile provider** (Mapbox GL JS, MapTiler) — vector tiles re-render client-side and can be fully restyled with a dark basemap style
+2. Apply a CSS `filter: invert(90%) hue-rotate(180deg)` to the `#map` element as a low-effort approximation (degrades tile readability)
+3. Subscribe to **Thunderforest Outdoors** (already in the data stack decision) or **Stadia Maps** which offer dark tile variants
+
+### Files Changed
+- `src/Waymarked.Web/wwwroot/css/app.css`
+- `src/Waymarked.Web/wwwroot/index.html`
+- `src/Waymarked.Web/wwwroot/js/theme.js` (new)
+
+---
+
 ## Data: UK OSM Coverage Assessment — Team Recommendations
 
 **From:** Data (GIS Engineer)  
