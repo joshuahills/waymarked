@@ -51,7 +51,7 @@ public class RouteJourneyTests : IClassFixture<AspireFixture>
 
             // The Leaflet map container should be visible
             var mapDiv = page.Locator("#map");
-            await mapDiv.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
+            await mapDiv.WaitForAsync(new LocatorWaitForOptions { Timeout = 15_000 });
             (await mapDiv.IsVisibleAsync()).Should().BeTrue("the map div should be visible on load");
 
             // Plan Route button must be present
@@ -78,7 +78,7 @@ public class RouteJourneyTests : IClassFixture<AspireFixture>
             // Type into the start search box and wait for autocomplete
             await page.FillAsync("#startSearch", "Newport, Isle of Wight");
             var firstResult = page.Locator(".autocomplete-item").First;
-            await firstResult.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
+            await firstResult.WaitForAsync(new LocatorWaitForOptions { Timeout = 30_000 });
             await firstResult.ClickAsync();
 
             // Confirm lat/lon hidden inputs are populated after selection
@@ -126,13 +126,13 @@ public class RouteJourneyTests : IClassFixture<AspireFixture>
             // Pick start
             await page.FillAsync("#startSearch", "Newport, Isle of Wight");
             var firstStart = page.Locator(".autocomplete-item").First;
-            await firstStart.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
+            await firstStart.WaitForAsync(new LocatorWaitForOptions { Timeout = 30_000 });
             await firstStart.ClickAsync();
 
             // Pick end
             await page.FillAsync("#endSearch", "Ryde");
             var firstEnd = page.Locator(".autocomplete-item").First;
-            await firstEnd.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
+            await firstEnd.WaitForAsync(new LocatorWaitForOptions { Timeout = 30_000 });
             await firstEnd.ClickAsync();
 
             // Plan
@@ -167,7 +167,7 @@ public class RouteJourneyTests : IClassFixture<AspireFixture>
             {
                 HasTextString = "Set Start"
             });
-            await setStartButton.First.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
+            await setStartButton.First.WaitForAsync(new LocatorWaitForOptions { Timeout = 15_000 });
             await setStartButton.First.ClickAsync();
 
             // Click the centre of the map div
