@@ -34,9 +34,9 @@ if (builder.ExecutionContext.IsPublishMode)
 #pragma warning disable ASPIRECOMPUTE003, ASPIREPIPELINES003
     var registry = builder.AddContainerRegistry("ghcr", registryEndpoint, registryRepository);
 
-    graphhopper.WithContainerRegistry(registry);
-    api.WithContainerRegistry(registry);
-    web.WithContainerRegistry(registry);
+    graphhopper.WithContainerRegistry(registry).WithRemoteImageTag("latest");
+    api.WithContainerRegistry(registry).WithRemoteImageTag("latest");
+    web.WithContainerRegistry(registry).WithRemoteImageTag("latest");
 #pragma warning restore ASPIRECOMPUTE003, ASPIREPIPELINES003
 
     // Caddy handles TLS termination and proxies to waymarked-web.
