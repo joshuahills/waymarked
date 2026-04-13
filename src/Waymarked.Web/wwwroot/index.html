@@ -36,7 +36,12 @@
             <h1>Waymarked</h1>
             <span class="header-tagline">UK Walk &amp; Hike Planner</span>
         </div>
-        <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Switch to dark mode">🌙</button>
+        <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Switch to dark mode">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" 
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+        </button>
     </header>
 
     <div class="container">
@@ -76,7 +81,7 @@
 
                 <!-- Route Type toggle -->
                 <div class="route-type-toggle" role="group" aria-label="Route type">
-                    <button type="button" id="routeTypeRoundTrip" class="route-type-btn active" aria-pressed="true">🔄 Round Trip</button>
+                    <button type="button" id="routeTypeRoundTrip" class="route-type-btn active" aria-pressed="true">Round Trip</button>
                     <button type="button" id="routeTypePtoP" class="route-type-btn" aria-pressed="false">→ Point to Point</button>
                 </div>
 
@@ -116,8 +121,8 @@
                 <div class="map-mode-group">
                     <span class="map-mode-label">Click map to place point</span>
                     <div class="map-mode-toggle">
-                        <button type="button" class="mode-btn" id="modeStartBtn">📍 Set Start</button>
-                        <button type="button" class="mode-btn" id="modeEndBtn">📍 Set End</button>
+                        <button type="button" class="mode-btn" id="modeStartBtn">Set Start</button>
+                        <button type="button" class="mode-btn" id="modeEndBtn">Set End</button>
                         <button type="button" class="mode-btn active-off" id="modeOffBtn">✕ Off</button>
                     </div>
                 </div>
@@ -141,15 +146,15 @@
             <div id="stats" class="stats">
                 <h3>Route Summary</h3>
                 <div class="stat-row">
-                    <span class="stat-label"><span aria-hidden="true">📏</span> Distance</span>
+                    <span class="stat-label">Distance</span>
                     <span class="stat-value" id="statDistance">-</span>
                 </div>
                 <div class="stat-row">
-                    <span class="stat-label"><span aria-hidden="true">⏱</span> Estimated Time</span>
+                    <span class="stat-label">Estimated Time</span>
                     <span class="stat-value" id="statTime">-</span>
                 </div>
                 <div class="stat-row">
-                    <span class="stat-label"><span aria-hidden="true">🗺</span> Instructions</span>
+                    <span class="stat-label">Instructions</span>
                     <span class="stat-value" id="statInstructions">-</span>
                 </div>
                 <button class="steps-toggle" id="stepsToggle" type="button" style="display:none">▾ Show steps</button>

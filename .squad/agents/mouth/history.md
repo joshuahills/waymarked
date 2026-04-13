@@ -134,3 +134,27 @@ Replaced the mutual-exclusion disabled-field pattern with a **Route Type toggle*
 
 **Dark mode pattern:** Active and active:hover use hardcoded #ffffff, not var(--clr-white) which remaps to near-black in dark mode.
 **Touch target:** min-height 44px on toggle buttons.
+
+---
+
+### Remove Emoji Icons from UI (2026-04-13)
+
+**Status:** IMPLEMENTED  
+**Decision:** .squad/decisions/inbox/mouth-no-emoji-icons.md
+
+Removed all emoji icons from the UI, replacing them with inline SVGs or plain text labels as appropriate.
+
+**What changed:**
+- Theme toggle button: Replaced 🌙/☀️ emojis with inline SVG moon/sun icons (16×16). Updated `theme.js` to swap icons via `innerHTML` instead of `textContent`.
+- Map mode toggles: Removed 📍 emojis from "Set Start" and "Set End" buttons — text labels are sufficient.
+- Route type toggle: Removed 🔄 emoji from "Round Trip" button — text label is sufficient.
+- Stats section: Removed all emoji spans (📏, ⏱, 🗺) — plain text labels ("Distance", "Estimated Time", "Instructions") are clearer.
+
+**Unicode characters preserved:** ▾/▴ (steps toggle), ✕ (Off button), → (Point to Point) — these are geometric/semantic characters, not emojis, with consistent cross-platform rendering.
+
+**Key files changed:**
+- index.html: SVG moon icon in theme toggle button, removed emojis from map mode buttons, route type button, and all stat labels
+- theme.js: `applyTheme()` now uses `innerHTML` to swap between moon and sun SVG icons
+
+**Rationale:** Emojis create inconsistent rendering across platforms, accessibility issues, and poor visual control. SVG icons and plain text provide better consistency, accessibility, and design system alignment.
+

@@ -4,7 +4,7 @@
 
 **UK Walk & Hike Route Planner** — plan walking and hiking routes across Great Britain. Enter a start point and a distance for a round-trip, or pick a destination for a point-to-point route.
 
-Built with .NET 10, [.NET Aspire](https://learn.microsoft.com/en-us/dotnet/aspire/), and [GraphHopper](https://www.graphhopper.com/).
+Built with .NET 10 and [Aspire](https://aspire.dev/), and [GraphHopper](https://www.graphhopper.com/).
 
 ---
 
@@ -16,6 +16,9 @@ Built with .NET 10, [.NET Aspire](https://learn.microsoft.com/en-us/dotnet/aspir
 - 🔄 **Round-trip routing** — set a start point and desired distance; get a loop route back
 - ➡️ **Point-to-point routing** — set start and end for a direct route
 - 🚶 **Walking & hiking profiles** — foot and hike profiles via GraphHopper
+- 🌙 **Dark mode** — toggles between light and dark map themes (CartoDB Dark Matter tiles in dark mode)
+- 📍 **Geolocation** — use your device's location as start point (browser geolocation API)
+- 📤 **Export routes** — download routes as GPX, KML, or GeoJSON
 - 🇬🇧 **UK-only** — coordinates validated to Great Britain bounding box
 
 ## Screenshots
@@ -39,7 +42,7 @@ Built with .NET 10, [.NET Aspire](https://learn.microsoft.com/en-us/dotnet/aspir
 aspire run
 ```
 
-This starts the full stack via .NET Aspire:
+This starts the full stack via Aspire:
 - **GraphHopper** container (routing engine, port 8989)
 - **Waymarked API** (ASP.NET Core, `/api/routes`, `/api/bounds`)
 - **Waymarked Web** (static frontend)
@@ -121,7 +124,7 @@ Returns the GB bounding box used for coordinate validation.
 
 | Layer | Technology |
 |---|---|
-| Orchestration | .NET Aspire 9 |
+| Orchestration | Aspire 13 |
 | API | ASP.NET Core 10 (Minimal API) |
 | Routing engine | GraphHopper 11.0 |
 | Map data | OpenStreetMap |
