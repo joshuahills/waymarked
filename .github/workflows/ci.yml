@@ -98,10 +98,12 @@ jobs:
           wget -q -O infra/graphhopper/data/map.osm.pbf \
             https://download.geofabrik.de/europe/united-kingdom/england/isle-of-wight-latest.osm.pbf
 
+      - name: Build GraphHopper image
+        run: docker build -t graphhopper-ci infra/graphhopper/
+
       - name: Build GraphHopper routing graph
         if: steps.gh-cache.outputs.cache-hit != 'true'
         run: |
-          docker build -t graphhopper-ci infra/graphhopper/
           docker run -d --name gh-build \
             -v "${{ github.workspace }}/infra/graphhopper/data:/data" \
             -v "${{ github.workspace }}/infra/graphhopper/config.yml:/data/config.yml:ro" \
