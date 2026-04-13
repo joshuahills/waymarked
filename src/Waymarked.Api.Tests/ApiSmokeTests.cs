@@ -350,6 +350,24 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
     // ──────────────────────────────────────────────────────────────────────────
 
     [Fact]
+    public async Task Post_ApiRoutes_RoundTrip_AcceptsCustomDistanceTolerance()
+    {
+        var payload = new
+        {
+            from = new[] { 51.5074, -0.1278 },
+            distance = 10.0,
+            distanceUnit = "kilometres",
+            profile = "hike",
+            distanceTolerance = 0.05
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/routes", payload);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK,
+            "a custom distanceTolerance parameter should be accepted by the API");
+    }
+
+    [Fact]
     public async Task Post_ExportGpx_FromOutsideGreatBritain_Returns400()
     {
         // Paris coords (lat=48.8566, lon=2.3522) — outside GB bounds

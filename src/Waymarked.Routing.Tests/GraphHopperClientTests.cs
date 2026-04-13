@@ -291,6 +291,87 @@ public class GraphHopperClientTests
         seeds.Should().HaveCount(3);
         seeds.Distinct().Should().HaveCountGreaterThan(1, "each retry should use a different seed");
     }
+
+    [Fact]
+    public async Task GetRouteAsync_RoundTrip_NoRetryWhenFirstAttemptWithinTolerance()
+    {
+        var capturedUris = new List<Uri>();
+        // 9500m is 5% off from 10000m — within the 15% default tolerance
+        var response = new RouteResponse { Paths = [new RoutePath { Distance = 9500 }] };
+        var handler = new CapturingHandler(capturedUris, JsonSerializer.Serialize(response));
+        var httpClient = new HttpClient(handler) { BaseAddress = new Uri("http://graphhopper") };
+        var client = new GraphHopperClient(httpClient, NullLogger<GraphHopperClient>.Instance);
+
+        var request = new RouteRequest
+        {
+            From = [51.5074, -0.1278],
+            Distance = 10000,
+            MaxRetries = 3,
+            DistanceTolerance = 0.15
+        };
+
+        var result = await client.GetRouteAsync(request);
+
+        // First attempt lands within tolerance — no retry should be issued
+        capturedUris.Should().HaveCount(1, "route was within tolerance on first attempt, no retry needed");
+        result!.Paths[0].Distance.Should().BeApproximately(9500, 1);
+    }
+
+    [Fact]
+    public async Task GetRouteAsync_RoundTrip_RespectsCustomTolerance()
+    {
+        var capturedUris = new List<Uri>();
+        // 9400m is 6% off from 10000m — within 15% but outside the tight 5% tolerance
+        // 9800m is 2% off from 10000m — within the 5% tolerance
+        var responses = new[]
+        {
+            new RouteResponse { Paths = [new RoutePath { Distance = 9400 }] },
+            new RouteResponse { Paths = [new RoutePath { Distance = 9800 }] }
+        };
+        var handler = new SequenceHandler(capturedUris, responses);
+        var httpClient = new HttpClient(handler) { BaseAddress = new Uri("http://graphhopper") };
+        var client = new GraphHopperClient(httpClient, NullLogger<GraphHopperClient>.Instance);
+
+        var request = new RouteRequest
+        {
+            From = [51.5074, -0.1278],
+            Distance = 10000,
+            MaxRetries = 3,
+            DistanceTolerance = 0.05 // tight 5% tolerance
+        };
+
+        var result = await client.GetRouteAsync(request);
+
+        // 9400m (6% off) exceeds 5% tolerance → retry; 9800m (2% off) is within → stop
+        capturedUris.Should().HaveCount(2, "first response exceeded 5% tolerance, one retry was needed");
+        result!.Paths[0].Distance.Should().BeApproximately(9800, 1);
+    }
+
+    [Fact]
+    public async Task GetRouteAsync_AbRoute_DoesNotRetryRegardlessOfDistance()
+    {
+        var capturedUris = new List<Uri>();
+        // Return a distance that would be far out of tolerance for a round-trip
+        var response = new RouteResponse { Paths = [new RoutePath { Distance = 999 }] };
+        var handler = new CapturingHandler(capturedUris, JsonSerializer.Serialize(response));
+        var httpClient = new HttpClient(handler) { BaseAddress = new Uri("http://graphhopper") };
+        var client = new GraphHopperClient(httpClient, NullLogger<GraphHopperClient>.Instance);
+
+        // Explicitly set MaxRetries and DistanceTolerance to show A→B ignores them
+        var request = new RouteRequest
+        {
+            From = [51.5074, -0.1278],
+            To = [53.4808, -2.2426],
+            MaxRetries = 3,
+            DistanceTolerance = 0.15
+        };
+
+        var result = await client.GetRouteAsync(request);
+
+        // A→B routing takes the direct path — retry logic is never entered
+        capturedUris.Should().HaveCount(1, "A→B routing does not use retry logic");
+        result!.Paths[0].Distance.Should().BeApproximately(999, 1);
+    }
 }
 
 /// <summary>
