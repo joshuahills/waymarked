@@ -647,3 +647,11 @@ button:disabled {
     color: #e8e8ea;
     box-shadow: 0 3px 14px rgba(0,0,0,0.5);
 }
+
+/* ── Dark mode: map tile darkening ─────────────────────────────────── */
+/* Applied only to .leaflet-tile-pane (raster tiles) — the SVG overlay  */
+/* pane (.leaflet-overlay-pane) is intentionally untouched so route     */
+/* polylines remain their original magenta colour.                      */
+[data-theme="dark"] .leaflet-tile-pane {
+    filter: invert(100%) hue-rotate(180deg);
+}

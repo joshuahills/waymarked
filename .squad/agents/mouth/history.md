@@ -149,8 +149,29 @@ Reads clearly at all zoom levels against OpenTopoMap tiles. The dark outline (#1
 **Leaflet dark overrides:**
 - Zoom bar, attribution, popup wrapper/tip all receive dark backgrounds and light text via `.leaflet-*` class overrides scoped to `[data-theme="dark"]`
 
-**Known limitation:**
-- OpenTopoMap raster tiles are fixed light-coloured images served from a CDN — they cannot be darkened. The map tile area remains visually light in dark mode. This is expected and acceptable. Documented in decisions.
+**Known limitation (resolved):**
+- OpenTopoMap raster tiles were initially undarkened in dark mode. This was later solved with a CSS filter on `.leaflet-tile-pane` — see Dark Map Tiles decision below.
 
 **Commit:** 1ae475d
+
+---
+
+### Dark Mode Map Tiles — CSS Filter on Tile Pane (2026-12-04)
+
+**Decision:** Darkened OpenTopoMap raster tiles in dark mode using a CSS filter scoped to `.leaflet-tile-pane`
+
+**Key Files:**
+- `src/Waymarked.Web/wwwroot/css/app.css` — added `[data-theme="dark"] .leaflet-tile-pane` rule
+
+**Filter applied:**
+```css
+filter: invert(100%) hue-rotate(180deg);
+```
+
+- `invert(100%)` flips tile luminance so the pale cream/white base map goes dark
+- `hue-rotate(180deg)` rotates hues back to prevent the "colour negative" effect — green terrain stays greenish, water stays bluish
+
+**Scope:** Filter targets `.leaflet-tile-pane` only (the raster tile layer). The `.leaflet-overlay-pane` (SVG — route polylines, markers) is intentionally excluded. The magenta route polyline remains unchanged at `#E0007A` in both themes.
+
+**Supersedes:** The "Known limitation" note from the Dark Mode Toggle entry above. Tiles can now be darkened via this approach.
 
