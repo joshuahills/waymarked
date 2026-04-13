@@ -15,6 +15,10 @@ builder.Services.AddOpenApi();
 // Add GraphHopper client - uses Aspire service discovery (resolves "graphhopper" to the container endpoint)
 builder.Services.AddGraphHopperClient();
 
+// In CI the routing graph is built without elevation data (faster graph build, no SRTM downloads).
+// GRAPHHOPPER__ELEVATIONENABLED is set to "false" by the AppHost when using a pre-built CI image.
+var elevationEnabled = builder.Configuration.GetValue<bool>("GRAPHHOPPER:ELEVATIONENABLED", true);
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -32,7 +36,7 @@ app.MapPost("/api/routes", async (ApiRouteRequest apiRequest, GraphHopperClient 
     var validationResult = ValidateRouteRequest(apiRequest, out var distanceInMetres);
     if (validationResult != null) return validationResult;
 
-    var request = BuildRouteRequest(apiRequest, distanceInMetres);
+    var request = BuildRouteRequest(apiRequest, distanceInMetres, elevationEnabled);
     var routeResult = await ExecuteRouteAsync(client, request, apiRequest.To == null);
     if (routeResult.Error != null) return routeResult.Error;
 
@@ -48,7 +52,7 @@ app.MapPost("/api/routes/export/gpx", async (ApiRouteRequest apiRequest, GraphHo
     var validationResult = ValidateRouteRequest(apiRequest, out var distanceInMetres);
     if (validationResult != null) return validationResult;
 
-    var request = BuildRouteRequest(apiRequest, distanceInMetres);
+    var request = BuildRouteRequest(apiRequest, distanceInMetres, elevationEnabled);
     var routeResult = await ExecuteRouteAsync(client, request, apiRequest.To == null);
     if (routeResult.Error != null) return routeResult.Error;
 
@@ -64,7 +68,7 @@ app.MapPost("/api/routes/export/kml", async (ApiRouteRequest apiRequest, GraphHo
     var validationResult = ValidateRouteRequest(apiRequest, out var distanceInMetres);
     if (validationResult != null) return validationResult;
 
-    var request = BuildRouteRequest(apiRequest, distanceInMetres);
+    var request = BuildRouteRequest(apiRequest, distanceInMetres, elevationEnabled);
     var routeResult = await ExecuteRouteAsync(client, request, apiRequest.To == null);
     if (routeResult.Error != null) return routeResult.Error;
 
@@ -80,7 +84,7 @@ app.MapPost("/api/routes/export/geojson", async (ApiRouteRequest apiRequest, Gra
     var validationResult = ValidateRouteRequest(apiRequest, out var distanceInMetres);
     if (validationResult != null) return validationResult;
 
-    var request = BuildRouteRequest(apiRequest, distanceInMetres);
+    var request = BuildRouteRequest(apiRequest, distanceInMetres, elevationEnabled);
     var routeResult = await ExecuteRouteAsync(client, request, apiRequest.To == null);
     if (routeResult.Error != null) return routeResult.Error;
 
@@ -177,13 +181,14 @@ static IResult? ValidateRouteRequest(ApiRouteRequest apiRequest, out double? dis
     return null;
 }
 
-static RouteRequest BuildRouteRequest(ApiRouteRequest apiRequest, double? distanceInMetres) =>
+static RouteRequest BuildRouteRequest(ApiRouteRequest apiRequest, double? distanceInMetres, bool elevationEnabled) =>
     new()
     {
         From = apiRequest.From,
         To = apiRequest.To,
         Distance = distanceInMetres,
-        Profile = apiRequest.Profile ?? "hike"
+        Profile = apiRequest.Profile ?? "hike",
+        Elevation = elevationEnabled
     };
 
 static async Task<(WaymarkedRouteResponse? Route, IResult? Error)> ExecuteRouteAsync(

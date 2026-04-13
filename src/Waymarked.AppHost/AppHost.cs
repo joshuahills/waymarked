@@ -33,10 +33,13 @@ graphhopper
     .WithEnvironment("JAVA_OPTS", string.IsNullOrEmpty(prebuiltImage) ? "-Xmx6g -Xms512m" : "-Xmx2g -Xms256m");
 
 // Add Waymarked API service
+// In CI the GH graph is built without elevation (config-ci.yml uses provider: none),
+// so disable elevation requests to avoid GH returning 400 "Elevation not supported!".
 var api = builder.AddProject<Projects.Waymarked_Api>("waymarked-api", launchProfileName: "http")
     .WithReference(graphhopper.GetEndpoint("http"))
     .WithHttpHealthCheck("/health", endpointName: "http")
-    .WaitFor(graphhopper);
+    .WaitFor(graphhopper)
+    .WithEnvironment("GRAPHHOPPER__ELEVATIONENABLED", string.IsNullOrEmpty(prebuiltImage) ? "true" : "false");
 
 // Add Waymarked Web frontend
 var web = builder.AddProject<Projects.Waymarked_Web>("waymarked-web", launchProfileName: "http")
