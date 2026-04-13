@@ -32,7 +32,7 @@ graphhopper
 // Add Waymarked API service
 var api = builder.AddProject<Projects.Waymarked_Api>("waymarked-api")
     .WithReference(graphhopper.GetEndpoint("http"))
-    .WithHttpHealthCheck("/health")
+    .WithHttpHealthCheck("/health", endpointName: "http")
     .WaitFor(graphhopper);
 
 // Add Waymarked Web frontend
