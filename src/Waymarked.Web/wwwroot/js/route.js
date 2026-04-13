@@ -156,11 +156,20 @@ form.addEventListener('submit', async e => {
         if (routeLayer) map.removeLayer(routeLayer);
         clearArrowMarkers();
 
-        routeLayer = L.polyline(coordinates, {
-            color: '#007bff',
+        // Two stacked polylines: dark outline underneath, vivid orange on top.
+        // Orange (#FF6B00) has strong contrast against OpenTopoMap's blue-grey
+        // water features (rivers, streams) where pure blue routes disappear.
+        const routeOutline = L.polyline(coordinates, {
+            color: '#1a0800',
+            weight: 7,
+            opacity: 0.55
+        });
+        const routeFill = L.polyline(coordinates, {
+            color: '#FF6B00',
             weight: 4,
-            opacity: 0.7
-        }).addTo(map);
+            opacity: 0.95
+        });
+        routeLayer = L.featureGroup([routeOutline, routeFill]).addTo(map);
 
         map.fitBounds(routeLayer.getBounds(), { padding: [50, 50] });
 
