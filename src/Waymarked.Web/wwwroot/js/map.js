@@ -33,6 +33,9 @@ const modeEndBtn        = document.getElementById('modeEndBtn');
 const modeOffBtn        = document.getElementById('modeOffBtn');
 const mapEl             = document.getElementById('map');
 
+const profileSelect      = document.getElementById('profile');
+const profileDescription = document.getElementById('profile-description');
+
 const stepsToggle       = document.getElementById('stepsToggle');
 const stepsList         = document.getElementById('stepsList');
 

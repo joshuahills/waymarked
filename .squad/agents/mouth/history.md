@@ -47,6 +47,24 @@ _(none yet — project just started)_
 - Added ProjectReference in AppHost.csproj
 - Used `AddServiceDefaults()` for observability/health checks
 
+### Profile Description Hint (2026-12-04)
+
+**Decision:** Added dynamic profile description below the Route Profile dropdown
+
+**Key Files:**
+- `src/Waymarked.Web/wwwroot/index.html` — Added `<small id="profile-description" class="helper-text">` after `<select id="profile">`
+- `src/Waymarked.Web/wwwroot/js/map.js` — Added DOM refs: `profileSelect`, `profileDescription`
+- `src/Waymarked.Web/wwwroot/js/route.js` — Added `profileDescriptions` map, `updateProfileDescription()` function, wired to `change` event and called on load
+
+**UX Pattern:**
+- Reused existing `.helper-text` CSS class (0.78rem, `--clr-muted`) — no new styles needed
+- `foot` → "Prefers footpaths and pavements. Good for shorter walks on mixed terrain."
+- `hike` → "Prefers trails and bridleways, avoids steep terrain. Best for longer scenic routes."
+- Description initialised on page load to match default `foot` selection
+- Updates instantly on dropdown change — no animation
+
+---
+
 ### Collapsible Route Steps List (2026-12-04)
 
 **Decision:** Added collapsible steps toggle to stats panel for turn-by-turn route instructions

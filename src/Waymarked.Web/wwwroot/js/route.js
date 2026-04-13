@@ -1,3 +1,17 @@
+// ── Profile description ──────────────────────────────────────────────
+
+const profileDescriptions = {
+    foot: 'Prefers footpaths and pavements. Good for shorter walks on mixed terrain.',
+    hike: 'Prefers trails and bridleways, avoids steep terrain. Best for longer scenic routes.'
+};
+
+function updateProfileDescription() {
+    profileDescription.textContent = profileDescriptions[profileSelect.value] || '';
+}
+
+profileSelect.addEventListener('change', updateProfileDescription);
+updateProfileDescription();
+
 // ── Field-state management (mutual exclusion: end point ↔ distance) ─
 
 let lastRouteRequest = null;
