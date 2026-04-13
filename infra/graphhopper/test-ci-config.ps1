@@ -39,7 +39,7 @@ Write-Host "==> Copied config-ci.yml -> $TempDir\config.yml" -ForegroundColor Gr
 $pbf = "$TempDir\map.osm.pbf"
 if (-not (Test-Path $pbf) -or (Get-Item $pbf).Length -lt 1MB) {
     if (Test-Path $pbf) { Remove-Item $pbf }
-    $url = "https://download.geofabrik.de/europe/great-britain/england/isle-of-wight-latest.osm.pbf"
+    $url = "https://download.geofabrik.de/europe/united-kingdom/england/isle-of-wight-latest.osm.pbf"
     Write-Host "==> Downloading Isle of Wight OSM (~8 MB)..." -ForegroundColor Yellow
     Write-Host "    Source: $url"
     try {

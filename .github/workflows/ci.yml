@@ -126,7 +126,7 @@ jobs:
         run: |
           mkdir -p infra/graphhopper/data
           wget -q -O infra/graphhopper/data/map.osm.pbf \
-            https://download.geofabrik.de/europe/great-britain/england/isle-of-wight-latest.osm.pbf
+            https://download.geofabrik.de/europe/united-kingdom/england/isle-of-wight-latest.osm.pbf
 
       # Only runs on cache miss. Builds GraphHopper from the local Dockerfile,
       # then runs it once to produce the routing graph in infra/graphhopper/data/.
