@@ -445,6 +445,27 @@ The global `[data-theme="dark"] button { color: #ffffff }` rule has specificity 
 
 ---
 
+### 2026-04-13: Active Backlog (user-confirmed)
+
+**By:** Josh Hills (via Copilot)
+**What:** Confirmed active backlog — items 4–7 from the previously presented list removed (round-trip accuracy, Thunderforest tiles, GraphHopper health check, integration tests). Self-hosted geocoding retained.
+**Why:** User direction — keeping focus on user-facing features and production-readiness items only.
+
+---
+
+## Active Backlog
+
+| # | Item | Owner | Notes |
+|---|------|-------|-------|
+| 1 | **User login / accounts** | Brand + Mikey | Auth system — needed before save or share can be built |
+| 2 | **Route saving** | Brand + Mouth | Save routes to a user account; depends on auth (#1) |
+| 3 | **Route sharing** | Brand + Mouth | Shareable links or social sharing of saved routes; depends on save (#2) |
+| 4 | **Self-hosted geocoding** | Data / Brand | Replace public Photon instance with self-hosted for production SLA |
+
+Items 1 → 2 → 3 are a dependency chain. Auth must land before save, save before share.
+
+---
+
 ## Governance
 
 - All meaningful changes require team consensus
