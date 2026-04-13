@@ -29,10 +29,10 @@ graphhopper
     .WithEnvironment("JAVA_OPTS", string.IsNullOrEmpty(prebuiltImage) ? "-Xmx6g -Xms512m" : "-Xmx2g -Xms256m");
 
 // CI config-ci.yml builds the graph without elevation; disable elevation requests to match.
-var api = builder.AddProject<Projects.Waymarked_Api>("waymarked-api", launchProfileName: "http")
+var api = builder.AddProject<Projects.Waymarked_Api>("waymarked-api", launchProfileName: "https")
     .WithReference(graphhopper.GetEndpoint("http"))
     .WithReference(db)
-    .WithHttpHealthCheck("/health", endpointName: "http")
+    .WithHttpsHealthCheck("/health", endpointName: "https")
     .WaitFor(graphhopper)
     .WaitFor(db)
     .WithEnvironment("GRAPHHOPPER__ELEVATIONENABLED", string.IsNullOrEmpty(prebuiltImage) ? "true" : "false");

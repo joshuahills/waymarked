@@ -26,7 +26,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Cookie.HttpOnly = true;
     options.Cookie.SameSite = SameSiteMode.Strict;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
     options.SlidingExpiration = true;
     options.ExpireTimeSpan = TimeSpan.FromDays(14);
     options.Events.OnRedirectToLogin = ctx =>
