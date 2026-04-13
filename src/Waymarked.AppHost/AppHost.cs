@@ -8,7 +8,8 @@ var prebuiltImage = Environment.GetEnvironmentVariable("GRAPHHOPPER_PREBUILT_IMA
 IResourceBuilder<ContainerResource> graphhopper;
 if (!string.IsNullOrEmpty(prebuiltImage))
 {
-    graphhopper = builder.AddContainer("graphhopper", prebuiltImage);
+    graphhopper = builder.AddContainer("graphhopper", prebuiltImage)
+        .WithImagePullPolicy(ImagePullPolicy.Never);
 }
 else
 {
