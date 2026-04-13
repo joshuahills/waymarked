@@ -33,3 +33,15 @@ _(none yet — project just started)_
 - Both use xUnit, FluentAssertions; avoided heavy mocking frameworks where possible
 
 **No failures encountered** — test infrastructure worked first time after stopping Aspire (file lock on Waymarked.Api.exe)
+
+### Round-Trip Accuracy Retry Tests (April 2026)
+
+**Tests added for Brand's retry improvements:**
+- `NoRetryWhenFirstAttemptWithinTolerance` — key regression guard: with MaxRetries=3 set, if the first route lands within tolerance no retry fires (previously this path had no test)
+- `RespectsCustomTolerance` — verified DistanceTolerance=0.05 causes a retry on a 6%-off route but accepts 2%-off on the follow-up
+- `AbRoute_DoesNotRetryRegardlessOfDistance` — A→B route with MaxRetries=3 still makes exactly 1 HTTP call (retry logic is bypassed)
+- `Post_ApiRoutes_RoundTrip_AcceptsCustomDistanceTolerance` — API-level smoke test confirming `distanceTolerance` is a valid request parameter
+
+**File lock pattern confirmed:** Stop Aspire processes before running `Waymarked.Api.Tests` (Api.dll is locked by the running Aspire project). Use `Stop-Process -Id <pid>` per PID shown in Aspire resource list.
+
+**Total test count post-commit:** 60 (41 routing unit + 19 API integration)
