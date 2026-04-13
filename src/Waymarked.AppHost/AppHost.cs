@@ -30,13 +30,13 @@ graphhopper
     .WithEnvironment("JAVA_OPTS", string.IsNullOrEmpty(prebuiltImage) ? "-Xmx6g -Xms512m" : "-Xmx2g -Xms256m");
 
 // Add Waymarked API service
-var api = builder.AddProject<Projects.Waymarked_Api>("waymarked-api")
+var api = builder.AddProject<Projects.Waymarked_Api>("waymarked-api", launchProfileName: "http")
     .WithReference(graphhopper.GetEndpoint("http"))
     .WithHttpHealthCheck("/health", endpointName: "http")
     .WaitFor(graphhopper);
 
 // Add Waymarked Web frontend
-var web = builder.AddProject<Projects.Waymarked_Web>("waymarked-web")
+var web = builder.AddProject<Projects.Waymarked_Web>("waymarked-web", launchProfileName: "http")
     .WithReference(api)
     .WaitFor(api);
 
