@@ -65,6 +65,25 @@ _(none yet — project just started)_
 
 ---
 
+### Route Polyline Colour — High-Contrast Orange (2026-12-04)
+
+**Decision:** Replaced blue route polyline with vivid orange (#FF6B00) + dark outline for strong contrast against OpenTopoMap water features
+
+**Key Files:**
+- `src/Waymarked.Web/wwwroot/js/route.js` — Replaced single `L.polyline` with `L.featureGroup` of two stacked polylines
+
+**Problem:** `#007bff` (blue) blended into OpenTopoMap's blue-grey rivers, streams and brooks, making the route hard to follow through river valleys.
+
+**Solution:** Two stacked polylines via `L.featureGroup`:
+- **Outline:** `#1a0800`, weight 7, opacity 0.55 — dark border to lift the line off any tile colour (woodland green, path beige, etc.)
+- **Fill:** `#FF6B00`, weight 4, opacity 0.95 — vivid orange that reads clearly against water blue at all zoom levels
+
+**Why orange:** Strong hue contrast against blue (complementary-adjacent on colour wheel). Consistent with existing brand palette (`--clr-trail: #c8590a`). Avoids conflict with green woodland, brown paths, and grey rock tiles on OpenTopoMap.
+
+**Implementation note:** `L.featureGroup` wraps both polylines so `map.removeLayer(routeLayer)` and `routeLayer.getBounds()` continue to work without API changes elsewhere.
+
+---
+
 ### Collapsible Route Steps List (2026-12-04)
 
 **Decision:** Added collapsible steps toggle to stats panel for turn-by-turn route instructions
@@ -89,4 +108,24 @@ _(none yet — project just started)_
 - Toggle switches between "▾ Show steps" and "▴ Hide steps"
 - CSS uses flexbox for step layout with auto-margin for distance alignment
 - Overrides global button::after arrow with empty content for toggle button
+
+---
+
+### Route Polyline Colour — Magenta (2026-12-04)
+
+**Decision:** Changed route polyline fill from orange (#FF6B00) to magenta (#E0007A)
+
+**Key Files:**
+- `src/Waymarked.Web/wwwroot/js/route.js` — updated `color` on the fill polyline
+
+**Problem:** Orange (#FF6B00) conflicts with A roads and motorways on OpenTopoMap, which render in orange/red tones — making the route indistinguishable from road overlays.
+
+**Solution:** Magenta (#E0007A) occupies the hue gap between:
+- Blue/cyan (water — rivers, lakes, streams)
+- Orange/red/yellow (roads — motorways, A roads, B roads)
+- Green (woodland, parks)
+
+Reads clearly at all zoom levels against OpenTopoMap tiles. The dark outline (#1a0800, weight 7) is unchanged.
+
+**Commit:** 24309ba
 

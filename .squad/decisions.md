@@ -369,6 +369,40 @@ If scaling is needed:
 
 ---
 
+### 2026-04-13: Route Polyline Colour — Magenta
+
+**Status:** IMPLEMENTED | **Owner:** Mouth (Frontend Dev)
+
+#### Decision: Route polyline fill colour set to magenta (#E0007A) with dark outline
+
+**Problem:**
+Initial implementation used vivid orange (#FF6B00) to improve contrast against water features on OpenTopoMap tiles. However, orange conflicts with A roads and motorways, which render in orange/red tones on OpenTopoMap. Users cannot reliably distinguish the route line from road features.
+
+**Solution:**
+Refined colour to magenta (#E0007A), which sits in the hue gap between all conflicting tile colours:
+- Blue/Cyan (rivers, lakes, streams) — ✅ no conflict
+- Orange/Red/Yellow (motorways, A roads, B roads) — ✅ no conflict
+- Green (woodland, parks, fields) — ✅ no conflict
+- Magenta/Hot pink (unused by map tiles) — ✅ clear gap
+
+**Implementation:**
+- Stacked polyline approach retained: dark outline (#1a0800, weight 7, opacity 0.55) + coloured fill
+- File: `src/Waymarked.Web/wwwroot/js/route.js`
+- Fill polyline colour changed to magenta only; outline pattern unchanged
+
+**Rationale:**
+Magenta reads clearly at all zoom levels. Vivid purple (#7B00FF) considered but rejected for lower luminance contrast against light beige/brown terrain tiles. Orange alternative (#FF006E) rejected for same reason.
+
+**History:**
+- **Commit 2d42598:** Initial orange (#FF6B00) with dark outline — improved water contrast but conflicted with road rendering
+- **Commit 24309ba:** Refined to magenta (#E0007A) — final colour resolves all conflicts
+
+**Validation:**
+✅ Build passed  
+✅ Both commits completed and deployed
+
+---
+
 ## Governance
 
 - All meaningful changes require team consensus
