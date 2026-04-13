@@ -130,3 +130,108 @@ jobs:
           name: e2e-test-results
           path: ./test-results/e2e/**/*.xml
           retention-days: 14
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 3: Build container images, push to GHCR, deploy to Hetzner server
+  #
+  # Runs on every push to master (not PRs).
+  # Requires the following GitHub Actions secrets:
+  #   DEPLOY_HOST    — IP or hostname of the Hetzner server
+  #   DEPLOY_USER    — SSH user on the server (e.g. deploy)
+  #   DEPLOY_SSH_KEY — private SSH key for that user
+  #
+  # The server must be bootstrapped with infra/deploy/setup.sh before first deploy.
+  # ─────────────────────────────────────────────────────────────────────────────
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/Directory.Packages.props', '**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore
+        run: dotnet restore src/Waymarked.sln
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # GraphHopper has a custom Dockerfile — build + push via docker/build-push-action
+      - name: Build & push GraphHopper image
+        uses: docker/build-push-action@v6
+        with:
+          context: infra/graphhopper
+          push: true
+          tags: ghcr.io/${{ github.repository }}/graphhopper:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # .NET SDK container publishing — no Dockerfile needed; SDK builds OCI images natively
+      - name: Build & push API image
+        run: |
+          dotnet publish src/Waymarked.Api/Waymarked.Api.csproj \
+            --os linux --arch x64 \
+            /t:PublishContainer \
+            /p:ContainerRegistry=ghcr.io \
+            /p:ContainerRepository=${{ github.repository }}/waymarked-api \
+            /p:ContainerImageTag=latest \
+            --configuration Release
+
+      - name: Build & push Web image
+        run: |
+          dotnet publish src/Waymarked.Web/Waymarked.Web.csproj \
+            --os linux --arch x64 \
+            /t:PublishContainer \
+            /p:ContainerRegistry=ghcr.io \
+            /p:ContainerRepository=${{ github.repository }}/waymarked-web \
+            /p:ContainerImageTag=latest \
+            --configuration Release
+
+      # Copy the Aspire-generated compose file and Caddyfile to the server.
+      # The server's .env (created by setup.sh) is never overwritten by CI —
+      # it contains server-specific bind mount paths and static :latest image tags.
+      - name: Copy deploy files to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          source: "infra/deploy/docker-compose.yaml,infra/deploy/Caddyfile"
+          target: /opt/waymarked
+          strip_components: 2
+
+      - name: Deploy
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            cd /opt/waymarked
+            docker compose pull
+            docker compose up -d --remove-orphans

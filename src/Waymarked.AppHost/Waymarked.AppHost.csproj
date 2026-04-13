@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.Docker" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Waymarked.Api\Waymarked.Api.csproj" />
     <ProjectReference Include="..\Waymarked.ServiceDefaults\Waymarked.ServiceDefaults.csproj" />
     <ProjectReference Include="..\Waymarked.Web\Waymarked.Web.csproj" />
