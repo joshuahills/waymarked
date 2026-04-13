@@ -232,3 +232,96 @@ No bugs found. Conversion (km/miles → metres) and validation (500m–100km) we
 - Elevation-corrected distance is a product decision (network km ≠ effort km in hilly terrain)
 
 **Tests:** 38 Waymarked.Routing.Tests passing (was 34). Committed: 8dd8051
+
+### ASP.NET Core Identity + PostgreSQL Auth (2026-04-14)
+
+**Packages used:**
+- `Aspire.Hosting.PostgreSQL` (13.2.2) — AppHost resource definition
+- `Aspire.Npgsql.EntityFrameworkCore.PostgreSQL` (13.2.2) — Aspire client integration for EF Core + Npgsql
+- `Microsoft.AspNetCore.Identity.EntityFrameworkCore` (10.0.5) — Identity with EF stores
+- All added via Central Package Management in `Directory.Packages.props`
+
+**Aspire pattern for Postgres:**
+- AppHost: `builder.AddPostgres("db").AddDatabase("waymarked")` — creates a named database resource
+- API receives: `.WithReference(db).WaitFor(db)` — injects connection string, waits for DB readiness
+- API reads: `builder.AddNpgsqlDbContext<WaymarkedDbContext>("waymarked")` — Aspire resolves the connection string by name
+
+**Identity setup order matters:**
+- `AddNpgsqlDbContext<T>` must be called before `AddIdentity<T, TRole>` to register the DbContext first
+- `AddIdentity` (not `AddIdentityCore`) automatically configures cookie authentication as the default scheme
+- `ConfigureApplicationCookie` must be called AFTER `AddIdentity` to override defaults
+- `AddAuthorization()` added explicitly for `.RequireAuthorization()` on endpoints
+
+**Cookie auth config:**
+- `HttpOnly = true`, `SameSite = Strict`, `SlidingExpiration = true`, `ExpireTimeSpan = 14 days`
+- Cookie auth only — no JWTs; YARP passes cookies transparently to downstream API
+
+**EnsureCreated at startup:**
+- Used `IServiceScope` to resolve `WaymarkedDbContext` and call `EnsureCreatedAsync()` after `Build()`
+- This creates schema on first run; migrations are a future concern
+- Scope is properly disposed via `using` block
+
+**Auth endpoints (`/api/auth`):**
+- `POST /register` — creates user via `UserManager<ApplicationUser>`, returns 400 validation problem on failure
+- `POST /login` — uses `SignInManager.PasswordSignInAsync`, no lockout for now (lockoutOnFailure: false)
+- `POST /logout` — `SignInManager.SignOutAsync`, always returns 200
+- `GET /me` — checks `User.Identity.IsAuthenticated`, returns email; guarded with `.RequireAuthorization()`
+
+**File structure:**
+- `src/Waymarked.Api/Data/ApplicationUser.cs` — minimal `IdentityUser` subclass
+- `src/Waymarked.Api/Data/WaymarkedDbContext.cs` — primary key constructor, inherits `IdentityDbContext<ApplicationUser>`
+- `src/Waymarked.Api/AuthEndpoints.cs` — static extension class with `MapAuthEndpoints()`, request records co-located
+
+**Build result:** `Build succeeded. 0 Error(s)`
+
+### Auth Endpoint Bug Fixes — Register 400 (2026-04-14)
+
+**Problem:** Josh was getting 400 on `POST /api/auth/register`. Three bugs found and fixed:
+
+1. **Null password → 500 (unhandled exception):** `UserManager.CreateAsync(user, null)` throws `ArgumentNullException`. Added explicit null/empty checks for both Email and Password before calling Identity — returns `400 { errors: ["..."] }` instead of crashing.
+
+2. **`/me` and protected routes returning 302 instead of 401:** `AddIdentity` sets up cookie auth with default redirect behaviour. `ConfigureApplicationCookie` was missing `OnRedirectToLogin` and `OnRedirectToAccessDenied` event overrides. Added both — API routes now return 401/403 instead of redirecting.
+
+3. **Login missing input validation:** `PasswordSignInAsync(null, ...)` fails silently and returns 401. Added null/empty guard on Email + Password — missing fields now return `400 { errors: ["Email and password are required."] }`.
+
+**Error format change:** Register errors were grouped by Identity error code (`ValidationProblem` dictionary). Changed to flat `{ errors: ["..."] }` array via `Results.BadRequest(new { errors = ... })`.
+
+**Test result:** 5 previously-skipped tests are now passing. Total: 19/19 passed, 0 skipped.
+
+**Files changed:**
+- `src/Waymarked.Api/AuthEndpoints.cs` — null guards on register + login, simplified error format
+- `src/Waymarked.Api/Program.cs` — `OnRedirectToLogin` + `OnRedirectToAccessDenied` added to cookie options
+- `src/Waymarked.Api.Tests/AuthEndpointTests.cs` — removed `[Fact(Skip=...)]` from 5 now-fixed tests
+
+### Auth Cookie Bug Fixes — Register Sign-In + SecurePolicy (2026-04-14)
+
+**Problem:** Users weren't staying signed in after registration. Dev tools showed no cookies being saved. Two bugs identified:
+
+1. **Register endpoint didn't issue an auth cookie:** `POST /api/auth/register` called `userManager.CreateAsync` but never called `signInManager.SignInAsync`. No cookie was issued, so the frontend's optimistic auth state was wiped on page refresh when `/api/auth/me` returned 401.
+
+2. **Cookie `SecurePolicy` blocked cookies on HTTP in dev:** Aspire dev runs on HTTP (not HTTPS). ASP.NET Core's default `SecurePolicy` is `Always` — it sets the `Secure` cookie attribute, causing browsers to refuse to store/send the cookie over plain HTTP connections. Added `CookieSecurePolicy.SameAsRequest` so the cookie is usable on HTTP in dev and HTTPS in production.
+
+**Fixes applied:**
+
+- `AuthEndpoints.cs`: Added `SignInManager<ApplicationUser> signInManager` parameter to the `/register` lambda. After successful `CreateAsync`, calls `await signInManager.SignInAsync(user, isPersistent: true)`.
+
+- `Program.cs`: Added `options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;` inside `ConfigureApplicationCookie`. `SameSite=Strict` retained — all browser requests go through YARP on the same origin, so Strict is safe and correct.
+
+**Build:** All errors were file-lock conflicts from the live Aspire process (PID 58648). Zero compilation errors in the changed code.
+
+### OpenTelemetry EF Core + SQL Client Instrumentation (2026-04-14)
+
+**What was added:**
+- `OpenTelemetry.Instrumentation.EntityFrameworkCore` (1.15.0-beta.1) — EF Core queries appear as spans
+- `OpenTelemetry.Instrumentation.SqlClient` (1.15.1) — raw ADO.NET SQL calls captured as spans
+- Both packages pinned in `src/Directory.Packages.props` and referenced in `Waymarked.ServiceDefaults.csproj`
+- `.AddEntityFrameworkCoreInstrumentation()` and `.AddSqlClientInstrumentation()` added to the tracing builder in `Extensions.cs`
+
+**Npgsql note:**
+- Npgsql has first-class OTel support. The Aspire `AddNpgsqlDbContext` integration wires up Npgsql tracing automatically via the data source — no extra `AddNpgsql()` call needed in ServiceDefaults.
+- `AddSqlClientInstrumentation()` is added for completeness (ADO.NET layer); Npgsql traces come through the Aspire integration.
+
+**Package version alignment:**
+- Versions chosen to match the existing OTel 1.15.x family already in use.
+
+**Build result:** `Build succeeded. 0 Error(s)` (21 pre-existing warnings, 0 errors)

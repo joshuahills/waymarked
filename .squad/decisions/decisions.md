@@ -2,6 +2,305 @@
 
 ---
 
+## 2026-04-14: Auth Cookie Fix — Register Sign-In + SecurePolicy
+
+**Date:** 2026-04-14  
+**Author:** Brand (Backend Dev)  
+**Status:** IMPLEMENTED
+
+### Context
+
+Users were not staying signed in after page refresh. Dev tools showed no cookies being saved. Two root causes were identified.
+
+### Decisions
+
+#### 1. Register endpoint must call `SignInAsync` after `CreateAsync`
+
+The `/api/auth/register` handler created the user but never issued an auth cookie. The fix is to call `await signInManager.SignInAsync(user, isPersistent: true)` immediately after a successful `CreateAsync`. This mirrors the persistent login behaviour of the `/login` endpoint.
+
+**File:** `src/Waymarked.Api/AuthEndpoints.cs`
+
+#### 2. Cookie `SecurePolicy` set to `SameAsRequest`
+
+ASP.NET Core's default `SecurePolicy` is `Always`, which sets the `Secure` cookie attribute unconditionally. In Aspire dev environments running over HTTP (not HTTPS), browsers refuse to store or send cookies with the `Secure` attribute. Setting `CookieSecurePolicy.SameAsRequest` makes the cookie work on both HTTP (dev) and HTTPS (production) without any separate environment-specific configuration.
+
+`SameSite=Strict` is retained. All browser-facing requests route through the YARP proxy on the same origin, so Strict is the correct and safest setting.
+
+**File:** `src/Waymarked.Api/Program.cs`
+
+### Rejected Alternatives
+
+- **`SameSite=Lax`:** Not needed. YARP means all requests arrive from the same origin — Strict is sufficient and more secure.
+- **Environment-specific `SecurePolicy`:** Over-engineering. `SameAsRequest` handles both cases cleanly.
+
+---
+
+## 2026-04-14: Auth Endpoint Hardening
+
+**Date:** 2026-04-14  
+**Author:** Brand  
+**Status:** IMPLEMENTED
+
+### Context
+
+Josh reported a 400 on `POST /api/auth/register`. Investigation found three bugs in the auth endpoints and Identity cookie configuration.
+
+### Changes Made
+
+#### 1. Register endpoint: explicit null guards before Identity
+
+Previously, `UserManager.CreateAsync(user, null)` would throw an unhandled `ArgumentNullException` (→ 500). Now returns 400 with descriptive message.
+
+```csharp
+if (string.IsNullOrEmpty(req.Email))
+    return Results.BadRequest(new { errors = new[] { "Email is required." } });
+
+if (string.IsNullOrEmpty(req.Password))
+    return Results.BadRequest(new { errors = new[] { "Password is required." } });
+```
+
+#### 2. Register endpoint: simplified error response format
+
+Changed from `Results.ValidationProblem(dictionary keyed by error code)` to a flat `Results.BadRequest(new { errors = [...descriptions...] })`. Clients see plain English messages, not Identity error code names.
+
+#### 3. Login endpoint: null guard before SignInManager
+
+`PasswordSignInAsync(null, ...)` was returning 401 for missing fields instead of a descriptive 400. Added guard on Email + Password.
+
+#### 4. ConfigureApplicationCookie: suppress redirect for API routes
+
+`AddIdentity` defaults to redirecting unauthenticated requests to `/Account/Login` (302). For a JSON API, this is wrong — clients get a redirect instead of 401. Fixed by adding event handlers to return 401/403 instead.
+
+### Impact
+
+- All 5 previously-skipped auth tests now pass (total: 19/19)
+- `POST /api/auth/register` with valid input returns 200
+- `POST /api/auth/register` with weak/missing fields returns 400 with clear English error messages
+- `GET /api/auth/me` unauthenticated returns 401 (not 302)
+- Cookie-based auth session flow fully validated
+
+---
+
+## 2026-04-14: OTel EF Core + SQL Client Instrumentation
+
+**Author:** Brand  
+**Date:** 2026-04-14  
+**Status:** IMPLEMENTED
+**Context:** Josh seeing 400 errors on `POST /api/auth/register` with no visibility into what the DB is doing.
+
+### What Changed
+
+Added EF Core and SQL client tracing instrumentation to `Waymarked.ServiceDefaults` so all services automatically get database query spans in the Aspire dashboard.
+
+**Files changed:**
+- `src/Directory.Packages.props` — pinned two new packages
+- `src/Waymarked.ServiceDefaults/Waymarked.ServiceDefaults.csproj` — added package references
+- `src/Waymarked.ServiceDefaults/Extensions.cs` — added `.AddEntityFrameworkCoreInstrumentation()` and `.AddSqlClientInstrumentation()` to the tracing pipeline
+
+**Packages added:**
+- `OpenTelemetry.Instrumentation.EntityFrameworkCore` 1.15.0-beta.1
+- `OpenTelemetry.Instrumentation.SqlClient` 1.15.1
+
+### Note
+
+Npgsql's OTel tracing is handled automatically by the Aspire `Aspire.Npgsql.EntityFrameworkCore.PostgreSQL` integration — no `AddNpgsql()` needed in ServiceDefaults. The `AddSqlClientInstrumentation()` is additive and covers the ADO.NET layer for completeness.
+
+Build: **0 errors**.
+
+---
+
+## 2026-04-14: Password Requirements Checklist — Register Form
+
+**Status:** IMPLEMENTED  
+**Owner:** Mouth (Frontend Dev)  
+**Date:** 2026-04-14
+
+### What Was Built
+
+Added a live password requirements checklist to the register form, plus submit button gating.
+
+**What changed:**
+- `index.html`: Added `<ul class="pw-requirements" id="pwRequirements">` inside the password `.auth-form-group`, with 5 `<li class="pw-req" data-req="...">` items (length, uppercase, lowercase, number, special)
+- `auth.js`:
+  - New DOM refs: `pwRequirements`, `registerPwInput`, `registerCfmInput`, `registerSubmit`
+  - `evaluatePassword()` — runs on `input` on both password fields; toggles `.met`/`.unmet` classes per requirement; disables submit unless all 5 pass **and** confirm matches
+  - `resetPasswordChecklist()` — removes all `.met`/`.unmet` classes, re-disables submit; called in `closeModal()`
+  - Submit button starts `disabled = true` on module init
+  - Register `finally` block calls `evaluatePassword()` instead of hard-setting `disabled = false`
+  - API error handler updated: reads `body.errors` array (joins with space) before falling back to `body.message`
+- `app.css`:
+  - `.pw-requirements` / `.pw-req` / `.pw-req.met` — 0.8rem, muted by default, green (#2d8a3e) when met
+  - `::before` pseudo-element: `✗` unmet → `✓` met, with `color` transition
+  - Dark mode: met items use `#7ab87a` (matches existing auth switch link colour)
+
+### Requirements Checked (ASP.NET Core Identity Defaults)
+
+- At least 6 characters
+- At least one uppercase letter (A–Z)
+- At least one lowercase letter (a–z)
+- At least one number (0–9)
+- At least one non-alphanumeric (special) character
+
+---
+
+## 2026-04-14: Auth UI — Modal Login/Register
+
+**Status:** IMPLEMENTED  
+**Owner:** Mouth (Frontend Dev)  
+**Date:** 2026-04-14
+
+### Decision
+
+Use a modal overlay for login/register, not a separate page or a sliding panel.
+
+### Rationale
+
+- The map should always be visible behind the auth modal — auth is never a gate, it's a prompt
+- A sliding panel from the side would compete with the existing sidebar (route form)
+- A centered modal overlay keeps focus on the auth task while leaving the map in view
+- Overlay is dismissible (ESC key, overlay click, close button) — zero friction to cancel
+
+### What Was Built
+
+- Header auth area: "Sign in" button (unauthenticated) or email + "Sign out" (authenticated)
+- Modal with login form and register form — toggled within the same modal, no page transitions
+- `GET /api/auth/me` called on load to restore session state silently
+- Forms POST JSON to `/api/auth/login` and `/api/auth/register`; success closes modal and updates nav
+- Sign-out POSTs to `/api/auth/logout`; UI updates best-effort regardless of response
+
+### Dark Mode & Mobile
+
+- Follows existing patterns — `[data-theme="dark"] button { color: #ffffff }` covers modal submit buttons
+- Close button gets explicit `color: #ffffff` on hover override
+- Switch links use `#7ab87a` (green tint) in dark mode
+- Modal constrained with `margin: 0.5rem` on small screens
+- Header email truncated/hidden at <768px
+- All interactive elements meet 44×44px minimum touch target
+
+---
+
+## 2026-04-14: Remove Emoji Icons from UI
+
+**Date:** 2026-04-14  
+**Author:** Mouth (Frontend Dev)  
+**Status:** IMPLEMENTED
+
+### Context
+
+Emojis were being used as functional UI icons in several places, creating inconsistencies and accessibility concerns.
+
+### Decision
+
+**Remove all emoji icons from the UI.** Replace with appropriate alternatives:
+
+1. **Theme toggle** — Replaced emoji with inline SVG icons (16×16 moon/sun)
+2. **Map mode toggles** — Removed 📍 emoji; text labels sufficient
+3. **Route type toggle** — Removed 🔄 emoji; text label sufficient
+4. **Stats section** — Removed all emoji spans; plain text labels clearer
+
+### Rationale
+
+- Inconsistent rendering across platforms and browsers
+- Accessibility concerns (screen readers read emoji descriptions)
+- Visual inconsistency with design system
+- Poor contrast and sizing control
+
+### Implementation
+
+**Files changed:**
+- `src/Waymarked.Web/wwwroot/index.html` — Replaced theme toggle button content with SVG, removed emojis from all other buttons and stat labels
+- `src/Waymarked.Web/wwwroot/js/theme.js` — Updated `applyTheme()` to swap SVG icons via `innerHTML` instead of emoji via `textContent`
+
+### Unicode Characters Preserved
+
+- `▾` / `▴` (steps toggle arrows) — geometric characters, consistent rendering
+- `✕` (Off button) — multiplication sign
+- `→` (Point to Point arrow) — arrow character
+
+---
+
+## 2026-04-14: Replace disabled-field UX with Route Type Toggle
+
+**Date:** 2026-04-14  
+**Owner:** Mouth (Frontend Dev)  
+**Status:** IMPLEMENTED
+
+### Problem
+
+The form showed both an End Point field and a Distance field simultaneously, with JS disabling one when the other was in use. Users encountered a greyed-out field with no clear explanation — it looked broken rather than intentional.
+
+### Decision
+
+Replace the mutual-exclusion disabled-field pattern with an explicit **Route Type toggle** (segmented pill control) positioned immediately after the Start Point section.
+
+- **Round Trip** (default): shows the Distance field, hides End Point entirely.  
+- **Point to Point**: shows the End Point search, hides Distance entirely.
+
+### Rationale
+
+- Showing only relevant fields eliminates confusion entirely
+- Segmented toggle is a standard mobile UX pattern for mutually exclusive modes
+- Toggle doubles as a clear label for the route type
+
+### Implementation
+
+**Files changed:**
+- `src/Waymarked.Web/wwwroot/index.html` — Added `.route-type-toggle` with buttons; wrapped sections in `#roundTripSection` and `#pointToPointSection`
+- `src/Waymarked.Web/wwwroot/js/route.js` — Removed `updateFieldStates()`; added `selectRoundTrip()` / `selectPointToPoint()` logic
+- `src/Waymarked.Web/wwwroot/css/app.css` — Added `.route-type-toggle` and `.route-type-btn` styles with dark mode overrides
+
+**Constraints respected:**
+- Hidden input IDs unchanged — API contract preserved
+- Form submit logic unchanged
+- Map-click "Set End" mode still works
+- Toggle buttons `min-height: 44px` — mobile HIG minimum
+
+---
+
+## 2026-04-13T23-03-33: User Directive — No Emoji Icons
+
+**By:** User (via Copilot)  
+**What:** Do not use emojis as icons in the UI. Replace with SVG icons or plain text.  
+**Why:** User request — captured for team memory
+
+---
+
+## 2026-04-13: Auth Solution Selected — ASP.NET Core Identity
+
+**Date:** 2026-04-13  
+**Status:** APPROVED | **Owner:** Brand (Backend Dev)
+
+### Decision
+
+Use ASP.NET Core Identity with PostgreSQL for user authentication.
+
+### Selected by
+
+Josh Hills after reviewing options analysis from Mikey.
+
+### Rejected Options
+
+- Keycloak (overkill)
+- Auth0 (vendor lock-in on password hashes)
+- Microsoft Entra External ID (complexity disproportionate to need)
+
+### Rationale
+
+In-framework, cookie auth natural for YARP/vanilla JS, full GDPR data ownership, shared DB with future route saving, no vendor lock-in.
+
+### Architecture
+
+PostgreSQL Aspire container resource → EF Core Identity stores → cookie auth middleware → YARP transparent forwarding.
+
+### Endpoints
+
+- POST /api/auth/register
+- POST /api/auth/login
+- POST /api/auth/logout
+- GET /api/auth/me
+
+---
+
 ## 🔒 LOCKED: 2026-04-12T17:35:00Z — Tech stack directive — C# / .NET / Aspire
 
 **By:** Josh Hills  

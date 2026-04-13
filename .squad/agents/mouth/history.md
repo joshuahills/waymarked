@@ -30,6 +30,37 @@ _(none yet — project just started)_
 
 ## Recent Work
 
+### Password Requirements Checklist — Register Form (2026-04-14)
+
+**Status:** IMPLEMENTED
+
+Added a live password requirements checklist to the register form, plus submit button gating.
+
+**What changed:**
+- `index.html`: Added `<ul class="pw-requirements" id="pwRequirements">` inside the password `.auth-form-group`, with 5 `<li class="pw-req" data-req="...">` items (length, uppercase, lowercase, number, special)
+- `auth.js`:
+  - New DOM refs: `pwRequirements`, `registerPwInput`, `registerCfmInput`, `registerSubmit`
+  - `evaluatePassword()` — runs on `input` on both password fields; toggles `.met`/`.unmet` classes per requirement; disables submit unless all 5 pass **and** confirm matches
+  - `resetPasswordChecklist()` — removes all `.met`/`.unmet` classes, re-disables submit; called in `closeModal()`
+  - Submit button starts `disabled = true` on module init
+  - Register `finally` block calls `evaluatePassword()` instead of hard-setting `disabled = false` (keeps state consistent after API errors)
+  - API error handler updated: reads `body.errors` array (joins with space) before falling back to `body.message`
+- `app.css`:
+  - `.pw-requirements` / `.pw-req` / `.pw-req.met` — 0.8rem, muted by default, green (#2d8a3e) when met
+  - `::before` pseudo-element: `✗` unmet → `✓` met, with `color` transition
+  - Dark mode: met items use `#7ab87a` (matches existing auth switch link colour)
+
+**Requirements checked (ASP.NET Core Identity defaults):**
+- At least 6 characters
+- At least one uppercase letter (A–Z)
+- At least one lowercase letter (a–z)
+- At least one number (0–9)
+- At least one non-alphanumeric (special) character
+
+---
+
+## Recent Work
+
 ### Geolocation — "Use My Location" (2026-04-13)
 
 **Status:** IMPLEMENTED  
@@ -157,4 +188,70 @@ Removed all emoji icons from the UI, replacing them with inline SVGs or plain te
 - theme.js: `applyTheme()` now uses `innerHTML` to swap between moon and sun SVG icons
 
 **Rationale:** Emojis create inconsistent rendering across platforms, accessibility issues, and poor visual control. SVG icons and plain text provide better consistency, accessibility, and design system alignment.
+
+---
+
+### Auth UI — Login/Register Modal (2026-04-14)
+
+**Status:** IMPLEMENTED
+**Decision:** .squad/decisions/inbox/mouth-auth-ui.md
+
+Built the frontend auth UI against ASP.NET Core Identity backend. Cookie auth — JS doesn't handle tokens.
+
+**Key files changed/created:**
+- `src/Waymarked.Web/wwwroot/index.html` — `.header-auth` nav area + `#authModal` with login/register forms
+- `src/Waymarked.Web/wwwroot/css/app.css` — auth styles appended; moved `margin-left: auto` from `.theme-toggle` to `.header-auth`
+- `src/Waymarked.Web/wwwroot/js/auth.js` — new file; all auth logic
+
+**Architecture decisions:**
+- Modal overlay (not a separate page or sliding panel) — keeps user in context, map stays visible
+- Login and Register share one modal, toggled by switching form visibility
+- On load: `GET /api/auth/me` silently checks session; failure = logged-out state, no alert
+- Sign-out is best-effort: clears UI even if the request fails
+- Auth doesn't block the map — "Sign in" button is opt-in from the header
+
+**Dark mode:** Follows existing patterns — `[data-theme="dark"] button { color: #ffffff }` covers modal submit buttons. Close button gets explicit `color: #ffffff` on hover override. Switch links use `#7ab87a` (green tint) in dark mode.
+
+**Mobile:** Modal constrained with `margin: 0.5rem` on small screens. Header email truncated/hidden at <768px to save space. All interactive elements meet 44×44px minimum touch target.
+
+**Dark mode gotcha:** `.header-auth-signin` and `.header-auth-signout` sit on the always-green header, so they must always be `color: #ffffff`. The `[data-theme="dark"] button { color: #ffffff }` global already handles this, but I've added explicit overrides to document intent and prevent any future specificity regression.
+
+## Learnings
+
+- **`margin-left: auto` in flex headers:** Only one element should own it to define the right-push. When adding new right-side controls, transfer `margin-left: auto` to the outermost grouping element.
+- **Cookie auth simplicity:** With HttpOnly cookies + YARP, the frontend auth module is just UI state — no token storage, no refresh logic. `fetch(..., { credentials: 'same-origin' })` is all that's needed.
+- **Sign-out best-effort pattern:** Always update UI after sign-out regardless of whether the API call succeeds. Users expect the UI to reflect their intent, not the network.
+- **Modal `hidden` attribute:** Prefer `hidden` attribute + `[hidden] { display: none }` CSS over toggling `display` directly — more semantic, works with forms for reset state.
+
+
+---
+
+### Password Requirements Checklist — Register Form (2026-04-14)
+
+**Status:** IMPLEMENTED
+
+Added a live password requirements checklist to the register form, plus submit button gating.
+
+**What changed:**
+- `index.html`: Added `<ul class="pw-requirements" id="pwRequirements">` inside the password `.auth-form-group`, with 5 `<li class="pw-req" data-req="...">` items (length, uppercase, lowercase, number, special)
+- `auth.js`:
+  - New DOM refs: `pwRequirements`, `registerPwInput`, `registerCfmInput`, `registerSubmit`
+  - `evaluatePassword()` — runs on `input` on both password fields; toggles `.met`/`.unmet` classes per requirement; disables submit unless all 5 pass **and** confirm matches
+  - `resetPasswordChecklist()` — removes all `.met`/`.unmet` classes, re-disables submit; called in `closeModal()`
+  - Submit button starts `disabled = true` on module init
+  - Register `finally` block calls `evaluatePassword()` instead of hard-setting `disabled = false` (keeps state consistent after API errors)
+  - API error handler updated: reads `body.errors` array (joins with space) before falling back to `body.message`
+- `app.css`:
+  - `.pw-requirements` / `.pw-req` / `.pw-req.met` — 0.8rem, muted by default, green (#2d8a3e) when met
+  - `::before` pseudo-element: `✗` unmet → `✓` met, with `color` transition
+  - Dark mode: met items use `#7ab87a` (matches existing auth switch link colour)
+
+**Requirements checked (ASP.NET Core Identity defaults):**
+- At least 6 characters
+- At least one uppercase letter (A–Z)
+- At least one lowercase letter (a–z)
+- At least one number (0–9)
+- At least one non-alphanumeric (special) character
+
+
 

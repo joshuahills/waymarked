@@ -1,4 +1,8 @@
 using System.Text;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Waymarked.Api;
+using Waymarked.Api.Data;
 using Waymarked.Routing;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,6 +12,37 @@ builder.AddServiceDefaults();
 
 // Add services to the container.
 builder.Services.AddProblemDetails();
+
+// Database and Identity
+builder.AddNpgsqlDbContext<WaymarkedDbContext>("waymarked");
+
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+    {
+        options.User.RequireUniqueEmail = true;
+    })
+    .AddEntityFrameworkStores<WaymarkedDbContext>()
+    .AddDefaultTokenProviders();
+
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SameSite = SameSiteMode.Strict;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.SlidingExpiration = true;
+    options.ExpireTimeSpan = TimeSpan.FromDays(14);
+    options.Events.OnRedirectToLogin = ctx =>
+    {
+        ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        return Task.CompletedTask;
+    };
+    options.Events.OnRedirectToAccessDenied = ctx =>
+    {
+        ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
+        return Task.CompletedTask;
+    };
+});
+
+builder.Services.AddAuthorization();
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
@@ -21,8 +56,18 @@ var elevationEnabled = builder.Configuration.GetValue<bool>("GRAPHHOPPER:ELEVATI
 
 var app = builder.Build();
 
+// Ensure the database schema exists (migrations come later).
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<WaymarkedDbContext>();
+    await db.Database.EnsureCreatedAsync();
+}
+
 // Configure the HTTP request pipeline.
 app.UseExceptionHandler();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 if (app.Environment.IsDevelopment())
 {
@@ -106,6 +151,8 @@ app.MapGet("/api/bounds", () => Results.Ok(new
 })).WithName("GetBounds");
 
 app.MapDefaultEndpoints();
+
+app.MapAuthEndpoints();
 
 app.Run();
 

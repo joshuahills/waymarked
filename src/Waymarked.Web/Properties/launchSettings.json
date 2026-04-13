@@ -6,7 +6,7 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
-      "applicationUrl": "http://localhost:2008"
+      "applicationUrl": "http://waymarked.dev.localhost:2008"
     },
     "Waymarked.Web": {
       "commandName": "Project",
@@ -14,7 +14,7 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
-      "applicationUrl": "https://localhost:2007;http://localhost:2008"
+      "applicationUrl": "https://waymarked.dev.localhost:2007;http://waymarked.dev.localhost:2008"
     }
   }
 }

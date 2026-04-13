@@ -641,7 +641,6 @@ button:disabled {
 
 /* ── Theme toggle button (in header) ───────────────────────────────── */
 .theme-toggle {
-    margin-left: auto;
     width: auto;
     padding: 0.35rem 0.65rem;
     background: rgba(255,255,255,0.12);
@@ -850,4 +849,283 @@ button:disabled {
     box-shadow: 0 3px 14px rgba(0,0,0,0.5);
 }
 
+/* ── Header auth controls ───────────────────────────────────────────── */
+.header-auth {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
 
+.header-auth-user {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.header-auth-email {
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.8);
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.header-auth-signin,
+.header-auth-signout {
+    width: auto;
+    padding: 0.35rem 0.85rem;
+    background: rgba(255,255,255,0.12);
+    color: #ffffff;
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.header-auth-signin::after,
+.header-auth-signout::after { content: ''; }
+
+.header-auth-signin:hover,
+.header-auth-signout:hover {
+    background: rgba(255,255,255,0.22);
+    transform: none;
+    box-shadow: none;
+    color: #ffffff;
+}
+
+.header-auth-signin:active,
+.header-auth-signout:active {
+    transform: none;
+    box-shadow: none;
+}
+
+/* Header bg never changes in dark mode — keep text white explicitly */
+[data-theme="dark"] .header-auth-signin,
+[data-theme="dark"] .header-auth-signout {
+    color: #ffffff;
+}
+
+/* ── Auth modal ─────────────────────────────────────────────────────── */
+.auth-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.auth-modal[hidden] {
+    display: none;
+}
+
+.auth-modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.52);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+}
+
+.auth-modal-panel {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+    margin: 1rem;
+    background: var(--clr-stone);
+    border-radius: 18px;
+    padding: 1.75rem 2rem 2rem;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.28);
+    animation: auth-modal-in 0.2s ease;
+}
+
+@keyframes auth-modal-in {
+    from { opacity: 0; transform: translateY(-10px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.auth-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+}
+
+.auth-modal-title {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--clr-ink);
+    letter-spacing: -0.01em;
+}
+
+.auth-modal-close {
+    width: auto;
+    padding: 0.35rem;
+    background: transparent;
+    color: var(--clr-muted);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, color 0.15s;
+    flex-shrink: 0;
+}
+
+.auth-modal-close::after { content: ''; }
+
+.auth-modal-close:hover {
+    background: var(--clr-earth-lt);
+    color: var(--clr-ink);
+    transform: none;
+    box-shadow: none;
+}
+
+.auth-modal-close:active {
+    transform: none;
+    box-shadow: none;
+}
+
+/* ── Auth form ──────────────────────────────────────────────────────── */
+.auth-form[hidden] { display: none; }
+
+.auth-form-group {
+    margin-bottom: 1rem;
+}
+
+.auth-form-group label {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-weight: 500;
+    font-size: 0.8rem;
+    color: var(--clr-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.auth-input {
+    width: 100%;
+    padding: 0.65rem 0.9rem;
+    border: 1.5px solid var(--clr-border);
+    border-radius: 10px;
+    font-size: 0.92rem;
+    font-family: inherit;
+    background: var(--clr-white);
+    color: var(--clr-ink);
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.auth-input:focus {
+    outline: none;
+    border-color: var(--clr-earth);
+    box-shadow: 0 0 0 3px rgba(45, 90, 39, 0.15);
+}
+
+.auth-error {
+    font-size: 0.82rem;
+    color: #c0392b;
+    margin-bottom: 0.75rem;
+    display: none;
+}
+
+.auth-error.visible {
+    display: block;
+}
+
+.auth-btn-submit {
+    width: 100%;
+    margin-top: 0.25rem;
+}
+
+.auth-switch {
+    text-align: center;
+    margin-top: 1rem;
+    font-size: 0.82rem;
+    color: var(--clr-muted);
+}
+
+.auth-switch a {
+    color: var(--clr-earth);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.auth-switch a:hover {
+    text-decoration: underline;
+}
+
+/* ── Password requirements checklist ────────────────────────────────── */
+.pw-requirements {
+    list-style: none;
+    margin: 0.5rem 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.pw-req {
+    font-size: 0.8rem;
+    color: var(--clr-muted);
+    padding-left: 1.25rem;
+    position: relative;
+    transition: color 0.15s;
+}
+
+.pw-req::before {
+    content: '✗';
+    position: absolute;
+    left: 0;
+    color: var(--clr-muted);
+    transition: color 0.15s;
+}
+
+.pw-req.met {
+    color: #2d8a3e;
+}
+
+.pw-req.met::before {
+    content: '✓';
+    color: #2d8a3e;
+}
+
+/* ── Dark mode: auth modal ──────────────────────────────────────────── */
+[data-theme="dark"] .auth-modal-close:hover {
+    background: #243320;
+    color: #ffffff;
+}
+
+[data-theme="dark"] .pw-req.met,
+[data-theme="dark"] .pw-req.met::before {
+    color: #7ab87a;
+}
+
+[data-theme="dark"] .auth-error {
+    color: #f08080;
+}
+
+[data-theme="dark"] .auth-switch a {
+    color: #7ab87a;
+}
+
+/* ── Responsive: auth modal on small screens ───────────────────────── */
+@media (max-width: 768px) {
+    .auth-modal-panel {
+        margin: 0.5rem;
+        padding: 1.5rem;
+        border-radius: 14px;
+    }
+
+    .header-auth-email {
+        display: none; /* email hidden on small screens — save space */
+    }
+}
