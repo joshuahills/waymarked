@@ -5,7 +5,7 @@
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": false,
-      "applicationUrl": "http://api.waymarked.dev.localhost:5542",
+      "applicationUrl": "http://waymarkedapi.dev.localhost:5542",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
@@ -14,7 +14,7 @@
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": false,
-      "applicationUrl": "https://api.waymarked.dev.localhost:7574;http://api.waymarked.dev.localhost:5542",
+      "applicationUrl": "https://waymarkedapi.dev.localhost:7574;http://waymarkedapi.dev.localhost:5542",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
