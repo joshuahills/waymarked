@@ -90,6 +90,12 @@ jobs:
         with:
           dotnet-version: '10.x'
 
+      # Swap in the CI config BEFORE the cache step so the cache key hashes the
+      # CI config (no elevation). Both the pre-build container and the Aspire test
+      # host will see the same config, keeping the graph compatible.
+      - name: Use CI GraphHopper config (elevation disabled)
+        run: cp infra/graphhopper/config-ci.yml infra/graphhopper/config.yml
+
       - name: Cache NuGet packages
         uses: actions/cache@v4
         with:
@@ -112,7 +118,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: infra/graphhopper/data
-          key: gh-graph-${{ hashFiles('infra/graphhopper/Dockerfile', 'infra/graphhopper/config.yml') }}-iow-v1
+          key: gh-graph-${{ hashFiles('infra/graphhopper/Dockerfile', 'infra/graphhopper/config.yml') }}-iow-v2
 
       # Only runs on cache miss. Downloads the ~5 MB Isle of Wight PBF file.
       - name: Download Isle of Wight OSM

@@ -1,0 +1,40 @@
+# GraphHopper configuration for CI — elevation disabled for faster graph builds.
+# SRTM elevation downloads from NASA take several minutes on CI runners.
+# This config is swapped in place of config.yml by the e2e-tests CI job.
+
+graphhopper:
+  datareader.file: /data/map.osm.pbf
+  graph.location: /data/graph-cache
+
+  profiles:
+    - name: foot
+      custom_model_files: [foot.json]
+    - name: hike
+      custom_model_files: [hike.json]
+
+  profiles_ch:
+    - profile: foot
+    - profile: hike
+
+  profiles_lm: []
+
+  # Elevation disabled — avoids slow SRTM tile downloads in CI
+  # Slopes will default to 0 (flat terrain assumed)
+
+  # Encoded values — average_slope omitted (requires elevation data)
+  graph.encoded_values: road_class, road_environment, road_access, surface, foot_network, hike_rating, foot_access, foot_priority, country, foot_road_access, mtb_rating, foot_average_speed
+
+  prepare.min_network_size: 200
+  routing.non_ch.max_waypoint_distance: 1000000
+
+  import.osm.ignored_highways: motorway,trunk
+
+server:
+  application_connectors:
+  - type: http
+    port: 8989
+    bind_host: 0.0.0.0
+  admin_connectors:
+  - type: http
+    port: 8990
+    bind_host: 0.0.0.0
