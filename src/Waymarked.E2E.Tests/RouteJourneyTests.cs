@@ -76,7 +76,7 @@ public class RouteJourneyTests : IClassFixture<AspireFixture>
         try
         {
             // Type into the start search box and wait for autocomplete
-            await page.FillAsync("#startSearch", "Keswick, Cumbria");
+            await page.FillAsync("#startSearch", "Newport, Isle of Wight");
             var firstResult = page.Locator(".autocomplete-item").First;
             await firstResult.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
             await firstResult.ClickAsync();
@@ -124,13 +124,13 @@ public class RouteJourneyTests : IClassFixture<AspireFixture>
         try
         {
             // Pick start
-            await page.FillAsync("#startSearch", "Keswick");
+            await page.FillAsync("#startSearch", "Newport, Isle of Wight");
             var firstStart = page.Locator(".autocomplete-item").First;
             await firstStart.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
             await firstStart.ClickAsync();
 
             // Pick end
-            await page.FillAsync("#endSearch", "Derwentwater");
+            await page.FillAsync("#endSearch", "Ryde");
             var firstEnd = page.Locator(".autocomplete-item").First;
             await firstEnd.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
             await firstEnd.ClickAsync();
@@ -232,10 +232,10 @@ public class RouteJourneyTests : IClassFixture<AspireFixture>
         var (playwright, browser, page) = await OpenAppAsync();
         try
         {
-            // Inject Keswick coordinates directly — avoids the autocomplete network call
-            await page.EvalOnSelectorAsync("#startLat", "el => el.value = '54.5994'");
-            await page.EvalOnSelectorAsync("#startLon", "el => el.value = '-3.1367'");
-            await page.FillAsync("#startSearch", "Keswick");
+            // Inject Newport, Isle of Wight coordinates directly — avoids the autocomplete network call
+            await page.EvalOnSelectorAsync("#startLat", "el => el.value = '50.7017'");
+            await page.EvalOnSelectorAsync("#startLon", "el => el.value = '-1.2986'");
+            await page.FillAsync("#startSearch", "Newport, Isle of Wight");
 
             await page.FillAsync("#distance", "5");
 
@@ -293,10 +293,10 @@ public class RouteJourneyTests : IClassFixture<AspireFixture>
         var (playwright, browser, page) = await OpenAppAsync();
         try
         {
-            // Inject Keswick coordinates and plan a round trip
-            await page.EvalOnSelectorAsync("#startLat", "el => el.value = '54.5994'");
-            await page.EvalOnSelectorAsync("#startLon", "el => el.value = '-3.1367'");
-            await page.FillAsync("#startSearch", "Keswick");
+            // Inject Newport, Isle of Wight coordinates and plan a round trip
+            await page.EvalOnSelectorAsync("#startLat", "el => el.value = '50.7017'");
+            await page.EvalOnSelectorAsync("#startLon", "el => el.value = '-1.2986'");
+            await page.FillAsync("#startSearch", "Newport, Isle of Wight");
 
             await page.FillAsync("#distance", "5");
 
