@@ -5,7 +5,7 @@
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": true,
-      "applicationUrl": "https://dashboard.waymarked.dev.localhost:17089;http://dashboard.waymarked.dev.localhost:15093",
+      "applicationUrl": "https://waymarkeddashboard.dev.localhost:17089;http://waymarkeddashboard.dev.localhost:15093",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         "DOTNET_ENVIRONMENT": "Development",
@@ -19,7 +19,7 @@
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": true,
-      "applicationUrl": "http://dashboard.waymarked.dev.localhost:15093",
+      "applicationUrl": "http://waymarkeddashboard.dev.localhost:15093",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         "DOTNET_ENVIRONMENT": "Development",
