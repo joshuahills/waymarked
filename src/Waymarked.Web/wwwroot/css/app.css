@@ -597,6 +597,20 @@ button:disabled {
 
 /* ── Dark mode: hardcoded-colour fixes ──────────────────────────────── */
 
+/* Buttons: --clr-white is remapped to near-black in dark mode, making text
+   invisible on the green background. Force white text on all buttons. */
+[data-theme="dark"] button {
+    color: #ffffff;
+}
+
+/* Steps toggle: --clr-earth-lt becomes #1a2d18 (very dark) in dark mode,
+   making the toggle nearly invisible. Match the main button style. */
+[data-theme="dark"] .steps-toggle {
+    background: var(--clr-earth);
+    color: #ffffff;
+    border-color: var(--clr-earth-dk);
+}
+
 /* Error banner */
 [data-theme="dark"] .error {
     background: #2d1515;
