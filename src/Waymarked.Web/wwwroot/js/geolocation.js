@@ -38,32 +38,34 @@ geolocBtn.addEventListener('click', () => {
 
     navigator.geolocation.getCurrentPosition(
         async (position) => {
-            const lat = position.coords.latitude;
-            const lon = position.coords.longitude;
-
-            // Pan/zoom to user location
-            map.setView([lat, lon], 14);
-
-            // Place distinct "you are here" marker (blue pulsing dot)
-            if (youAreHereMarker) map.removeLayer(youAreHereMarker);
-            youAreHereMarker = L.marker([lat, lon], {
-                icon: createYouAreHereIcon(),
-                zIndexOffset: 500,
-                title: 'You are here'
-            }).addTo(map);
-
-            // Reverse-geocode for a friendly label
-            let name = coordLabel(lat, lon);
             try {
-                const result = await reverseGeocode(lat, lon);
-                if (result.display_name) name = result.display_name;
-            } catch { /* fall back to coordinate label */ }
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
 
-            // Populate the start point (uses the existing setter from geocoder.js)
-            setStartPoint(lat, lon, name);
+                // Pan/zoom to user location
+                map.setView([lat, lon], 14);
 
-            geolocBtn.classList.remove('geoloc-btn--loading');
-            geolocBtn.disabled = false;
+                // Place distinct "you are here" marker (blue pulsing dot)
+                if (youAreHereMarker) map.removeLayer(youAreHereMarker);
+                youAreHereMarker = L.marker([lat, lon], {
+                    icon: createYouAreHereIcon(),
+                    zIndexOffset: 500,
+                    title: 'You are here'
+                }).addTo(map);
+
+                // Reverse-geocode for a friendly label
+                let name = coordLabel(lat, lon);
+                try {
+                    const result = await reverseGeocode(lat, lon);
+                    if (result.display_name) name = result.display_name;
+                } catch { /* fall back to coordinate label */ }
+
+                // Populate the start point (uses the existing setter from geocoder.js)
+                setStartPoint(lat, lon, name);
+            } finally {
+                geolocBtn.classList.remove('geoloc-btn--loading');
+                geolocBtn.disabled = false;
+            }
         },
         (error) => {
             geolocBtn.classList.remove('geoloc-btn--loading');
