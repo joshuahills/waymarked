@@ -80,6 +80,7 @@ jobs:
     name: E2E Tests
     runs-on: ubuntu-latest
     needs: build-and-test
+    timeout-minutes: 25
 
     steps:
       - name: Checkout
@@ -168,11 +169,16 @@ jobs:
       # Aspire.Hosting.Testing starts GraphHopper via the AppHost, which bind-mounts
       # infra/graphhopper/data/ (pre-populated above). GH detects the existing graph
       # and skips rebuilding, so startup takes ~5 seconds instead of 30+.
+      # GRAPHHOPPER_PREBUILT_IMAGE tells AppHost.cs to use the already-built image
+      # instead of rebuilding from the Dockerfile (saves ~5 minutes per CI run).
       - name: Run E2E tests
+        env:
+          GRAPHHOPPER_PREBUILT_IMAGE: graphhopper-ci
         run: |
           dotnet test src/Waymarked.E2E.Tests \
             --no-build \
             --configuration Release \
+            --logger "console;verbosity=detailed" \
             --logger "trx;LogFileName=e2e-results.xml" \
             --results-directory ./test-results/e2e
 

@@ -4,14 +4,30 @@ var builder = DistributedApplication.CreateBuilder(args);
 // not the local `aspire start` experience.
 builder.AddDockerComposeEnvironment("env");
 
-// Add GraphHopper routing engine - built locally from Dockerfile (no official image on Docker Hub/GHCR)
-var graphhopper = builder.AddDockerfile("graphhopper", "../../infra/graphhopper")
+// In CI, use the pre-built graphhopper-ci image (built by the graph pre-build step)
+// to avoid rebuilding from the Dockerfile during test runs (~5 min saved).
+// Locally, build from the Dockerfile so changes to the GH config are picked up.
+var prebuiltImage = Environment.GetEnvironmentVariable("GRAPHHOPPER_PREBUILT_IMAGE");
+
+IResourceBuilder<ContainerResource> graphhopper;
+if (!string.IsNullOrEmpty(prebuiltImage))
+{
+    graphhopper = builder.AddContainer("graphhopper", prebuiltImage);
+}
+else
+{
+    graphhopper = builder.AddDockerfile("graphhopper", "../../infra/graphhopper")
+        .WithLifetime(ContainerLifetime.Persistent)
+        .WithDeveloperCertificateTrust(trust: false);
+}
+
+// Common configuration — bind-mount config + data dir, expose HTTP, set JVM heap.
+// In CI with the small IoW extract, 2 GB is plenty. Locally use 6 GB for full UK data.
+graphhopper
     .WithBindMount("../../infra/graphhopper/config.yml", "/data/config.yml", isReadOnly: true)
     .WithBindMount("../../infra/graphhopper/data", "/data", isReadOnly: false)
     .WithHttpEndpoint(targetPort: 8989, name: "http")
-    .WithEnvironment("JAVA_OPTS", "-Xmx6g -Xms512m")
-    .WithLifetime(ContainerLifetime.Persistent)
-    .WithDeveloperCertificateTrust(trust: false);
+    .WithEnvironment("JAVA_OPTS", string.IsNullOrEmpty(prebuiltImage) ? "-Xmx6g -Xms512m" : "-Xmx2g -Xms256m");
 
 // Add Waymarked API service
 var api = builder.AddProject<Projects.Waymarked_Api>("waymarked-api")
