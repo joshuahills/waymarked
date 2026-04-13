@@ -238,7 +238,7 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          source: "infra/deploy/docker-compose.yaml,infra/deploy/Caddyfile"
+          source: "infra/deploy/docker-compose.yaml"
           target: /opt/waymarked
           strip_components: 2
 

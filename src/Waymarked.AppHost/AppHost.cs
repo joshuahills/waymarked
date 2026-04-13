@@ -39,23 +39,14 @@ if (builder.ExecutionContext.IsPublishMode)
     web.WithContainerRegistry(registry).WithRemoteImageTag("latest");
 #pragma warning restore ASPIRECOMPUTE003, ASPIREPIPELINES003
 
-    // Caddy handles TLS termination and proxies to waymarked-web.
-    // Bind mounts for TLS cert persistence — paths filled in .env.production on the server.
-    builder.AddContainer("caddy", "caddy", "2-alpine")
-        .WithBindMount("../../infra/deploy/Caddyfile", "/etc/caddy/Caddyfile", isReadOnly: true)
-        .WithBindMount("../../infra/deploy/caddy-data", "/data", isReadOnly: false)
-        .WithBindMount("../../infra/deploy/caddy-config", "/config", isReadOnly: false)
-        .WithHttpEndpoint(port: 80, targetPort: 80, name: "http")
-        .WithHttpsEndpoint(port: 443, targetPort: 443, name: "https")
-        .WaitFor(web)
-        .PublishAsDockerComposeService((resource, service) =>
-        {
-            // Caddy must be reachable from the internet — promote ports from expose → ports
-            service.Ports.Add("80:80");
-            service.Ports.Add("443:443");
-            // HTTP/3 (UDP)
-            service.Ports.Add("443:443/udp");
-        });
+    // TLS termination is handled by the existing Caddy instance on this server
+    // (shared with other apps). Expose waymarked-web on host port 8081 so the
+    // existing Caddy can reverse-proxy to it — see infra/deploy/Caddyfile for
+    // the snippet to add to the existing Caddy's config.
+    web.PublishAsDockerComposeService((resource, service) =>
+    {
+        service.Ports.Add("8081:8080");
+    });
 }
 
 builder.Build().Run();

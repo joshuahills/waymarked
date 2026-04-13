@@ -26,24 +26,16 @@ apt-get install -y -qq docker-ce docker-ce-cli containerd.io docker-compose-plug
 
 echo "==> Creating directory layout..."
 mkdir -p "$DEPLOY_DIR/graphhopper/data"
-mkdir -p "$DEPLOY_DIR/caddy-data"
-mkdir -p "$DEPLOY_DIR/caddy-config"
-mkdir -p /var/log/caddy
 
 echo "==> Downloading production config from GitHub..."
 curl -fsSL "https://raw.githubusercontent.com/$GH_REPO/master/infra/deploy/docker-compose.yaml" \
   -o "$DEPLOY_DIR/docker-compose.yaml"
 curl -fsSL "https://raw.githubusercontent.com/$GH_REPO/master/infra/graphhopper/config.yml" \
   -o "$DEPLOY_DIR/graphhopper/config.yml"
-curl -fsSL "https://raw.githubusercontent.com/$GH_REPO/master/infra/deploy/Caddyfile" \
-  -o "$DEPLOY_DIR/Caddyfile"
 
 echo "==> Writing .env file..."
 cat > "$DEPLOY_DIR/.env" <<EOF
 # Bind mounts — server-specific paths (do not commit this file)
-CADDY_BINDMOUNT_0=$DEPLOY_DIR/Caddyfile
-CADDY_BINDMOUNT_1=$DEPLOY_DIR/caddy-data
-CADDY_BINDMOUNT_2=$DEPLOY_DIR/caddy-config
 GRAPHHOPPER_BINDMOUNT_0=$DEPLOY_DIR/graphhopper/config.yml
 GRAPHHOPPER_BINDMOUNT_1=$DEPLOY_DIR/graphhopper/data
 
@@ -89,11 +81,16 @@ echo "   DEPLOY_HOST   — this server's IP or hostname"
 echo "   DEPLOY_USER   — deploy"
 echo "   DEPLOY_SSH_KEY — contents of ~/.ssh/waymarked_deploy (private key)"
 echo ""
-echo "3. Make GHCR packages public (recommended for simplicity):"
-echo "   After the first CI push, go to:"
-echo "   https://github.com/joshuahills/waymarked/packages"
-echo "   For each package (graphhopper, waymarked-api, waymarked-web):"
-echo "   → Package settings → Change visibility → Public"
+echo "3. Configure the existing Caddy to route waymarked.hills.dev:"
+echo "   a. Add this to the existing Caddy's docker-compose.yml (under the caddy service):"
+echo "      extra_hosts:"
+echo "        - \"host.docker.internal:host-gateway\""
+echo ""
+echo "   b. Append the Waymarked site block from infra/deploy/Caddyfile to the"
+echo "      existing Caddy's Caddyfile (use host.docker.internal:8081)."
+echo ""
+echo "   c. Reload the existing Caddy:"
+echo "      docker exec <caddy-container> caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile"
 echo ""
 echo "4. Seed GraphHopper OSM data (one-time, ~15-30 min):"
 echo ""

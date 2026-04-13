@@ -1,27 +1,36 @@
-# Caddy reverse proxy for Waymarked
-# Auto-provisions a Let's Encrypt TLS certificate for the domain.
-# Proxies all traffic to the waymarked-web container (which itself proxies
-# /api/* requests to waymarked-api via YARP).
+# ─────────────────────────────────────────────────────────────────────────────
+# Waymarked — Caddy snippet for the shared reverse proxy
+#
+# This is NOT a standalone Caddyfile. Paste this block into the existing
+# Caddy instance's Caddyfile on the server, then reload Caddy:
+#
+#   docker exec <caddy-container> caddy reload \
+#     --config /etc/caddy/Caddyfile --adapter caddyfile
+#
+# waymarked-web listens on host port 8081 (mapped by docker-compose).
+# The existing Caddy container must be able to reach the Docker host.
+# Two options:
+#
+#   Option A — add to the existing app's docker-compose.yml, under the caddy service:
+#       extra_hosts:
+#         - "host.docker.internal:host-gateway"
+#   Then use: reverse_proxy host.docker.internal:8081
+#
+#   Option B — use the Docker bridge gateway IP (typically 172.17.0.1):
+#       ip route | grep docker0   # verify the gateway IP
+#   Then use: reverse_proxy 172.17.0.1:8081
+# ─────────────────────────────────────────────────────────────────────────────
 
 waymarked.hills.dev {
-    reverse_proxy waymarked-web:8080
+    # Change the host below based on which option you used above.
+    reverse_proxy host.docker.internal:8081
 
-    # Compress responses
     encode gzip
 
-    # Security headers
     header {
         Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
         X-Content-Type-Options "nosniff"
         X-Frame-Options "DENY"
         Referrer-Policy "strict-origin-when-cross-origin"
-    }
-
-    # Access logs
-    log {
-        output file /var/log/caddy/access.log {
-            roll_size 10mb
-            roll_keep 5
-        }
     }
 }
