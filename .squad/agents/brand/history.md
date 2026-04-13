@@ -209,3 +209,26 @@ src/
 - TODO comment added in `Program.cs` before route request construction
 - Reserved space for Data (GIS team) to add UK bounding box validation
 - Keeps validation concerns separated: distance (Backend) vs coordinates (Data)
+
+### Round-Trip Distance Accuracy Investigation (2026-04-13)
+
+**Root Cause:**
+GraphHopper's round-trip algorithm is probabilistic — it cannot guarantee returned distance matches requested distance. Three gaps in the old implementation: no `round_trip.max_retries` set (defaulted to 3), no client-side deviation check, and a single fixed seed per request.
+
+**What Was Fixed:**
+- Added `round_trip.max_retries=10` to every round-trip GraphHopper query (up from default 3)
+- Added client-side retry loop: if returned distance deviates >15% from requested, retry with a new random seed (up to 3 retries = 4 total attempts)
+- Added `MaxRetries` and `DistanceTolerance` to `RouteRequest`; API sets MaxRetries=3 for round-trip, 0 for A→B
+- Exposed `distanceTolerance` as an optional API request parameter (default 0.15)
+- Extracted `SendAsync` private method to avoid duplicating HTTP logic in the retry loop
+- 4 new unit tests: max_retries in query, full retry exhaustion, early-stop on tolerance met, seed diversity
+
+**Distance Unit Audit:**
+No bugs found. Conversion (km/miles → metres) and validation (500m–100km) were already correct.
+
+**What Requires Data's Input:**
+- OSM path network density — sparse networks prevent long loops; client retries can't fix data gaps
+- GraphHopper routing profile weight tuning in config.yml (hike profile)
+- Elevation-corrected distance is a product decision (network km ≠ effort km in hilly terrain)
+
+**Tests:** 38 Waymarked.Routing.Tests passing (was 34). Committed: 8dd8051
