@@ -10,6 +10,16 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="css/app.css" />
+    <!-- Anti-FOUC: apply theme before first paint -->
+    <script>
+        (function () {
+            var saved = localStorage.getItem('theme');
+            var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (saved === 'dark' || (!saved && prefersDark)) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
 </head>
 <body>
     <header>
@@ -26,6 +36,7 @@
             <h1>Waymarked</h1>
             <span class="header-tagline">UK Walk &amp; Hike Planner</span>
         </div>
+        <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Switch to dark mode">🌙</button>
     </header>
 
     <div class="container">
@@ -138,5 +149,6 @@
     <script src="js/markers.js"></script>
     <script src="js/arrows.js"></script>
     <script src="js/route.js"></script>
+    <script src="js/theme.js"></script>
 </body>
 </html>

@@ -12,6 +12,17 @@
     --clr-white:    #ffffff;
 }
 
+/* ── Dark mode token overrides ──────────────────────────────────────── */
+[data-theme="dark"] {
+    --clr-stone:    #1c1c20;
+    --clr-white:    #2a2a2e;
+    --clr-ink:      #e8e8ea;
+    --clr-muted:    #9a9a9a;
+    --clr-border:   #3c3c40;
+    --clr-earth-lt: #1a2d18;
+    --clr-trail-lt: #2a1810;
+}
+
 /* ── Reset ──────────────────────────────────────────────────────────── */
 * {
     margin: 0;
@@ -144,6 +155,11 @@ select {
     background-repeat: no-repeat;
     background-position: right 0.9rem center;
     padding-right: 2.2rem;
+}
+
+/* Select arrow in dark mode — lighten the SVG stroke to match muted text */
+[data-theme="dark"] select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239a9a9a' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 
 /* ── Plan Route button ──────────────────────────────────────────────── */
@@ -557,4 +573,76 @@ button:disabled {
         width: 100%;
         max-height: 50vh;
     }
+}
+
+/* ── Theme toggle button (in header) ───────────────────────────────── */
+.theme-toggle {
+    margin-left: auto;
+    width: auto;
+    padding: 0.35rem 0.65rem;
+    background: rgba(255,255,255,0.12);
+    color: var(--clr-white);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 8px;
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.15s;
+    flex-shrink: 0;
+}
+.theme-toggle::after  { content: ''; }
+.theme-toggle:hover   { background: rgba(255,255,255,0.22); transform: none; box-shadow: none; }
+.theme-toggle:active  { transform: none; box-shadow: none; background: rgba(255,255,255,0.12); }
+
+/* ── Dark mode: hardcoded-colour fixes ──────────────────────────────── */
+
+/* Error banner */
+[data-theme="dark"] .error {
+    background: #2d1515;
+    border-color: #6b3030;
+    color: #f08080;
+}
+
+/* Steps-toggle hover (hardcoded #d4ecce in light) */
+[data-theme="dark"] .steps-toggle:hover {
+    background: #223d20;
+}
+
+/* mode-btn.active-off hover (hardcoded #555 in light) */
+[data-theme="dark"] .mode-btn.active-off:hover {
+    background: #888;
+    border-color: #888;
+}
+
+/* ── Dark mode: Leaflet control overrides ───────────────────────────── */
+[data-theme="dark"] .leaflet-bar a,
+[data-theme="dark"] .leaflet-control-zoom a {
+    background: #2a2a2e;
+    color: #e8e8ea;
+    border-bottom-color: #3c3c40;
+}
+
+[data-theme="dark"] .leaflet-bar a:hover,
+[data-theme="dark"] .leaflet-control-zoom a:hover {
+    background: #3a3a3e;
+}
+
+[data-theme="dark"] .leaflet-bar {
+    border: 2px solid #3c3c40;
+}
+
+[data-theme="dark"] .leaflet-control-attribution {
+    background: rgba(42, 42, 46, 0.85);
+    color: #9a9a9a;
+}
+
+[data-theme="dark"] .leaflet-control-attribution a {
+    color: #7ab87a;
+}
+
+[data-theme="dark"] .leaflet-popup-content-wrapper,
+[data-theme="dark"] .leaflet-popup-tip {
+    background: #2a2a2e;
+    color: #e8e8ea;
+    box-shadow: 0 3px 14px rgba(0,0,0,0.5);
 }
