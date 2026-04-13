@@ -454,7 +454,114 @@ Added COPY instructions to ensure the custom model files are included in the con
 ## 2026-04-13T21:02: User directive — Distance display
 
 **By:** Josh Hills (via Copilot)  
-**What:** Do NOT show achieved distance vs requested distance in the UI. Mouth should not implement a "Route achieved: X km (Target was Y km)" display or any equivalent distance deviation feedback on the frontend.  
+**What:** Do NOT show achieved distance vs requested distance in the UI. Mouth should not implement a "Route achieved: X km (Target was Y km)" display or any equivalent distance deviation feedback on the frontend.
+
+---
+
+## Mouth: Fix Button Dark Mode Styling
+
+**Date:** 2026-12-04  
+**Owner:** Mouth (Frontend Dev)  
+**Status:** IMPLEMENTED
+
+### What Was Wrong
+
+Two buttons were broken in dark mode:
+
+**"Plan Route" button:** Global `button` rule sets `color: var(--clr-white)`. In dark mode, `--clr-white` is remapped to `#2a2a2e` (near-black) so sidebar panels look dark. This remapping made the button text near-invisible — dark grey text against a dark green (`#2d5a27`) background.
+
+**"Show Steps" button (`.steps-toggle`):** Background was `var(--clr-earth-lt)`, which in dark mode becomes `#1a2d18` (very dark green). Text was `color: var(--clr-earth)` = `#2d5a27` — a medium green. Dark green text on very dark green background: effectively invisible.
+
+### Root Cause
+
+The dark mode token override for `--clr-white` was designed to darken card/panel surfaces. But because the base `button` rule used `color: var(--clr-white)` for its text, the token change silently broke button legibility. `.steps-toggle`'s hardcoded `--clr-earth-lt` background compounded the issue.
+
+### Fix
+
+Added two rules under the `[data-theme="dark"]` hardcoded-colour fixes section in `src/Waymarked.Web/wwwroot/css/app.css`:
+
+```css
+/* Force white text on all buttons in dark mode */
+[data-theme="dark"] button {
+    color: #ffffff;
+}
+
+/* Steps toggle: match main button appearance */
+[data-theme="dark"] .steps-toggle {
+    background: var(--clr-earth);
+    color: #ffffff;
+    border-color: var(--clr-earth-dk);
+}
+```
+
+Both buttons now show white text on the brand green (`--clr-earth: #2d5a27`) background in dark mode — readable, clearly clickable, and consistent with light-mode brand colour. No changes to light mode behaviour.
+
+### Files Changed
+
+- `src/Waymarked.Web/wwwroot/css/app.css`
+
+**Commit:** 559b7e6
+
+---
+
+## Mouth: Dark Mode Map Tiles — Layer Swap (v2)
+
+**Date:** 2026-12-04  
+**Status:** IMPLEMENTED  
+**Owner:** Mouth (Frontend Dev)  
+**Supersedes:** Dark Mode Map Tiles — CSS Filter on Tile Pane
+
+### Problem
+
+The previous approach of applying `filter: invert(100%) hue-rotate(180deg)` to `.leaflet-tile-pane` produced a recognisably dark map but with a notable flaw: built-up areas (dense urban blocks) remained light-coloured because the hue-rotate partially reversed the inversion on certain warm-grey building tones. The result did not feel genuinely dark.
+
+### Decision
+
+**Swap the Leaflet tile layer on every theme change** — use **CartoDB Dark Matter** in dark mode and **OpenTopoMap** in light mode. Remove the CSS filter entirely.
+
+### Implementation
+
+#### `src/Waymarked.Web/wwwroot/js/map.js`
+
+- Assigned the tile layer to `window.tileLayer` (previously anonymous).
+- Assigned the map instance to `window.map` (previously `const` — not on `window`).
+- This exposes both globals to `theme.js`, which loads after `map.js`.
+
+#### `src/Waymarked.Web/wwwroot/js/theme.js`
+
+- Added `TILE_CONFIG` object with URLs and attribution strings for both themes.
+- Added `swapTileLayer(theme)` function: removes current `window.tileLayer`, creates a new `L.tileLayer`, adds it to `window.map`, and calls `bringToBack()` so route polylines remain on top.
+- `applyTheme(theme)` now calls `swapTileLayer` in addition to updating the DOM/aria attributes.
+- Swap fires on: toggle click, initial load, OS preference detection (all paths flow through `applyTheme`).
+
+#### `src/Waymarked.Web/wwwroot/css/app.css`
+
+- Removed the `[data-theme="dark"] .leaflet-tile-pane { filter: … }` block — now obsolete and would conflict with the genuine dark tiles.
+
+### Tile Layers
+
+| Theme | Provider | URL |
+|-------|----------|-----|
+| Light | OpenTopoMap | `https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png` |
+| Dark  | CartoDB Dark Matter | `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png` |
+
+### Constraints Honoured
+
+- Route polylines (`#E0007A` magenta + dark outline) are in `.leaflet-overlay-pane` (SVG). `bringToBack()` pushes only the tile layer behind all overlays — polylines are untouched.
+- Script load order: `map.js` runs before `theme.js`; `window.map` and `window.tileLayer` are set before `theme.js` runs.
+- No build step, no framework — vanilla JS throughout.
+
+### Alternatives Considered
+
+- **CSS filter (v1):** Cheap, no JS change — but produces artefacts on warm-grey building tiles.
+- **Separate CSS class toggle:** Would require duplicating tile URL in CSS which is not a supported Leaflet pattern.
+- **Map style override API:** Not available for OpenTopoMap (raster only).
+
+### Resolution: OpenTopoMap Undarkeable (Earlier Limitation)
+
+Earlier decision noted in "Dark Mode Toggle" entry: "OpenTopoMap raster tiles were initially undarkened in dark mode. This was later solved with a CSS filter on `.leaflet-tile-pane` — see Dark Map Tiles decision below."
+
+**This limitation is now fully resolved** by using CartoDB Dark Matter in dark mode instead of filtering OpenTopoMap. The issue is removed.
 **Why:** User request — captured for team memory
 
 ---
@@ -508,40 +615,86 @@ Scoped overrides for `[data-theme="dark"]`:
 - Attribution (`.leaflet-control-attribution`): translucent dark bg, muted text, green links
 - Popups (`.leaflet-popup-content-wrapper`, `.leaflet-popup-tip`): dark bg, light text
 
-### OpenTopoMap Tile Darkening in Dark Mode (Resolution: 2026-04-13)
+### OpenTopoMap Tile Darkening in Dark Mode — Layer Swap Implementation (2026-04-13)
 
-**Status:** ✅ RESOLVED | **Implementation:** Commit 8e3cf6d
+**Status:** ✅ SUPERSEDED by v2 (commit 66172a5) | **Original:** Commit 8e3cf6d | **Current:** Commit 66172a5
 
-OpenTopoMap raster tiles can now be darkened in dark mode using a CSS filter. The previous limitation stating "tiles cannot be darkened" is now resolved.
+#### Version 1: CSS Filter Approach (Initial, then Superseded)
 
-#### Implementation
-
-Applied CSS filter to `.leaflet-tile-pane` under `[data-theme="dark"]` in `src/Waymarked.Web/wwwroot/css/app.css`:
-
+Applied CSS filter to `.leaflet-tile-pane` to darken tiles:
 ```css
 [data-theme="dark"] .leaflet-tile-pane {
     filter: invert(100%) hue-rotate(180deg);
 }
 ```
 
-- **`invert(100%)`** — Flips tile luminance: light pixels become dark, dark become light
-- **`hue-rotate(180deg)`** — Rotates colour hues to counteract the "negative" effect and restore natural perception (green stays greenish, blue stays bluish)
+**Issue with v1:** While the filter darkened the map, built-up urban areas (dense city blocks) remained relatively light-coloured because `hue-rotate` partially reversed the inversion on warm-grey building tones, resulting in a map that didn't feel genuinely dark.
 
-#### Scope
+#### Version 2: Tile Layer Swap (Current Implementation)
 
-- **Applied to:** `.leaflet-tile-pane` (raster tiles only)
-- **Intentionally unaffected:** `.leaflet-overlay-pane` (SVG layer with route polylines and markers)
-  - Route polyline (#E0007A magenta) retains its original colour in both light and dark mode for high contrast
-  - Markers and other SVG overlays are unfiltered
+**Decision:** Swap the entire Leaflet tile layer on theme change.
+- **Light mode:** OpenTopoMap (topographic)
+- **Dark mode:** CartoDB Dark Matter (genuinely dark tiles)
 
-#### Result
+**Implementation (Commit 66172a5):**
 
-Tiles now appear appropriately darkened in dark mode while maintaining route visibility. No filter applied in light mode.
+Modified `src/Waymarked.Web/wwwroot/js/map.js`:
+- Exposed `window.tileLayer` and `window.map` globals so `theme.js` can swap them
+
+Modified `src/Waymarked.Web/wwwroot/js/theme.js`:
+- Added `TILE_CONFIG` object with URLs and attributions for both providers
+- Added `swapTileLayer(theme)` function: removes current layer, creates new `L.tileLayer`, adds to map, calls `bringToBack()` to keep SVG overlays on top
+- Updated `applyTheme()` to call `swapTileLayer()` on every theme change (toggle click, initial load, OS preference detection)
+
+Modified `src/Waymarked.Web/wwwroot/css/app.css`:
+- Removed obsolete `[data-theme="dark"] .leaflet-tile-pane { filter: … }` rule
+
+**Result:** Tiles are now genuinely dark in dark mode with appropriate contrast. Route polylines (#E0007A magenta) remain visible on top. No filter artifacts.
+
+### Files Changed (Dark Mode - All Versions)
+- `src/Waymarked.Web/wwwroot/css/app.css`
+- `src/Waymarked.Web/wwwroot/index.html`
+- `src/Waymarked.Web/wwwroot/js/theme.js`
+- `src/Waymarked.Web/wwwroot/js/map.js`
+
+---
+
+## Dark Mode: Button Styling Fix (2026-04-13)
+
+**Status:** IMPLEMENTED | **Owner:** Mouth (Frontend Dev) | **Commit:** 559b7e6
+
+### Problem
+
+Two button elements were broken in dark mode:
+
+**"Plan Route" button:** The global `button` rule sets `color: var(--clr-white)`. In dark mode, `--clr-white` remaps to `#2a2a2e` (near-black, for panel backgrounds). This made button text near-invisible — dark grey on dark green.
+
+**"Show Steps" button (`.steps-toggle`):** Background was `var(--clr-earth-lt)` = `#1a2d18` (very dark green) in dark mode. Text was `color: var(--clr-earth)` = `#2d5a27` (medium green). Result: green text on dark green background, effectively invisible.
+
+### Root Cause
+
+The `--clr-white` token was designed to darken card/panel surfaces in dark mode. But the `button` rule reused this token for text colour, silently breaking legibility.
+
+### Solution
+
+Added two CSS rules under `[data-theme="dark"]` hardcoded-colour fixes in `app.css`:
+
+```css
+[data-theme="dark"] button {
+    color: #ffffff;
+}
+
+[data-theme="dark"] .steps-toggle {
+    background: var(--clr-earth);
+    color: #ffffff;
+    border-color: var(--clr-earth-dk);
+}
+```
+
+Both buttons now display white text on brand green (`#2d5a27`) in dark mode — readable, clickable, consistent with light mode. No impact on light mode.
 
 ### Files Changed
 - `src/Waymarked.Web/wwwroot/css/app.css`
-- `src/Waymarked.Web/wwwroot/index.html`
-- `src/Waymarked.Web/wwwroot/js/theme.js` (new)
 
 ---
 
