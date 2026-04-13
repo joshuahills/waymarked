@@ -38,31 +38,26 @@ Write-Host "==> Copied config-ci.yml -> $TempDir\config.yml" -ForegroundColor Gr
 # 2. Download IoW OSM PBF if missing
 $pbf = "$TempDir\map.osm.pbf"
 if (-not (Test-Path $pbf) -or (Get-Item $pbf).Length -lt 1MB) {
-    if (Test-Path $pbf) {
-        Write-Host "==> Existing PBF too small — removing and re-downloading..." -ForegroundColor Yellow
-        Remove-Item $pbf
-    } else {
-        Write-Host "==> Downloading Isle of Wight OSM (~5 MB)..." -ForegroundColor Yellow
+    if (Test-Path $pbf) { Remove-Item $pbf }
+    $url = "https://download.geofabrik.de/europe/great-britain/england/isle-of-wight-latest.osm.pbf"
+    Write-Host "==> Downloading Isle of Wight OSM (~8 MB)..." -ForegroundColor Yellow
+    Write-Host "    Source: $url"
+    try {
+        # BITS behaves like a browser download — no User-Agent issues
+        Start-BitsTransfer -Source $url -Destination $pbf -Description "IoW OSM PBF"
+    } catch {
+        Write-Host "    BITS failed ($_), trying curl.exe with browser UA..." -ForegroundColor Yellow
+        curl.exe -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0 Safari/537.36" `
+            -e "https://download.geofabrik.de/europe/great-britain/england.html" `
+            -o $pbf $url
     }
-    # Geofabrik blocks requests without a browser-like User-Agent.
-    # Try Geofabrik first, fall back to openstreetmap.fr mirror.
-    $urls = @(
-        "https://download.geofabrik.de/europe/great-britain/england/isle-of-wight-latest.osm.pbf",
-        "https://download.openstreetmap.fr/extracts/europe/united_kingdom/england/isle_of_wight.osm.pbf"
-    )
-    $downloaded = $false
-    foreach ($url in $urls) {
-        Write-Host "    Trying: $url"
-        curl.exe -L -A "Mozilla/5.0 (compatible; waymarked-ci/1.0)" -o $pbf $url
-        if ((Test-Path $pbf) -and (Get-Item $pbf).Length -gt 1MB) {
-            $downloaded = $true
-            break
-        }
-        Write-Host "    Failed (got $((Get-Item $pbf -ErrorAction SilentlyContinue)?.Length ?? 0) bytes), trying next..." -ForegroundColor Yellow
-        Remove-Item $pbf -ErrorAction SilentlyContinue
-    }
-    if (-not $downloaded) {
-        Write-Error "All download sources failed. Try manually downloading the IoW PBF to:`n  $pbf"
+    if (-not (Test-Path $pbf) -or (Get-Item $pbf).Length -lt 1MB) {
+        Write-Host ""
+        Write-Host "ERROR: Automated download failed." -ForegroundColor Red
+        Write-Host "Please manually download the file from your browser:" -ForegroundColor Yellow
+        Write-Host "  $url" -ForegroundColor Cyan
+        Write-Host "Save it to: $pbf" -ForegroundColor Cyan
+        Write-Host "Then re-run this script."
         exit 1
     }
     Write-Host "    Downloaded: $([math]::Round((Get-Item $pbf).Length/1MB,1)) MB" -ForegroundColor Green
