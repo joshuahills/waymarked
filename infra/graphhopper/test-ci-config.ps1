@@ -37,27 +37,38 @@ Write-Host "==> Copied config-ci.yml -> $TempDir\config.yml" -ForegroundColor Gr
 
 # 2. Download IoW OSM PBF if missing
 $pbf = "$TempDir\map.osm.pbf"
-if (-not (Test-Path $pbf)) {
-    Write-Host "==> Downloading Isle of Wight OSM (~5 MB)..." -ForegroundColor Yellow
-    # Use curl.exe (bundled with Windows 10+) — Invoke-WebRequest can corrupt binary files
-    curl.exe -L -o $pbf `
-        "https://download.geofabrik.de/europe/great-britain/england/isle-of-wight-latest.osm.pbf"
-    if (-not (Test-Path $pbf) -or (Get-Item $pbf).Length -lt 100000) {
-        Write-Error "PBF download failed or file is too small — check your network."
+if (-not (Test-Path $pbf) -or (Get-Item $pbf).Length -lt 1MB) {
+    if (Test-Path $pbf) {
+        Write-Host "==> Existing PBF too small — removing and re-downloading..." -ForegroundColor Yellow
+        Remove-Item $pbf
+    } else {
+        Write-Host "==> Downloading Isle of Wight OSM (~5 MB)..." -ForegroundColor Yellow
+    }
+    # Geofabrik blocks requests without a browser-like User-Agent.
+    # Try Geofabrik first, fall back to openstreetmap.fr mirror.
+    $urls = @(
+        "https://download.geofabrik.de/europe/great-britain/england/isle-of-wight-latest.osm.pbf",
+        "https://download.openstreetmap.fr/extracts/europe/united_kingdom/england/isle_of_wight.osm.pbf"
+    )
+    $downloaded = $false
+    foreach ($url in $urls) {
+        Write-Host "    Trying: $url"
+        curl.exe -L -A "Mozilla/5.0 (compatible; waymarked-ci/1.0)" -o $pbf $url
+        if ((Test-Path $pbf) -and (Get-Item $pbf).Length -gt 1MB) {
+            $downloaded = $true
+            break
+        }
+        Write-Host "    Failed (got $((Get-Item $pbf -ErrorAction SilentlyContinue)?.Length ?? 0) bytes), trying next..." -ForegroundColor Yellow
+        Remove-Item $pbf -ErrorAction SilentlyContinue
+    }
+    if (-not $downloaded) {
+        Write-Error "All download sources failed. Try manually downloading the IoW PBF to:`n  $pbf"
         exit 1
     }
-    Write-Host "    Downloaded: $pbf ($([math]::Round((Get-Item $pbf).Length/1MB,1)) MB)" -ForegroundColor Green
+    Write-Host "    Downloaded: $([math]::Round((Get-Item $pbf).Length/1MB,1)) MB" -ForegroundColor Green
 } else {
     $sizeMB = [math]::Round((Get-Item $pbf).Length/1MB,1)
-    if ($sizeMB -lt 0.1) {
-        Write-Host "==> Existing PBF is too small ($sizeMB MB) — deleting and re-downloading..." -ForegroundColor Yellow
-        Remove-Item $pbf
-        curl.exe -L -o $pbf `
-            "https://download.geofabrik.de/europe/great-britain/england/isle-of-wight-latest.osm.pbf"
-        Write-Host "    Downloaded: $([math]::Round((Get-Item $pbf).Length/1MB,1)) MB" -ForegroundColor Green
-    } else {
-        Write-Host "==> IoW PBF already present ($sizeMB MB) — skipping download" -ForegroundColor Green
-    }
+    Write-Host "==> IoW PBF already present ($sizeMB MB) — skipping download" -ForegroundColor Green
 }
 
 # 3. Build the container image
