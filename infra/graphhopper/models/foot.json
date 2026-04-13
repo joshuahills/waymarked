@@ -1,0 +1,27 @@
+{
+  "speed": [
+    {
+      "if": "road_class == MOTORWAY || road_class == TRUNK",
+      "limit_to": "1"
+    },
+    {
+      "if": "road_class == PRIMARY || road_class == SECONDARY",
+      "multiply_by": "0.7"
+    }
+  ],
+  "priority": [
+    {
+      "if": "highway == FOOTWAY",
+      "multiply_by": "1.5"
+    },
+    {
+      "if": "highway == PATH",
+      "multiply_by": "1.2"
+    },
+    {
+      "if": "surface == PAVED_SMOOTH || surface == ASPHALT",
+      "multiply_by": "1.1"
+    }
+  ],
+  "distance_influence": 80
+}

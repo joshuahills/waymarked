@@ -1,0 +1,8 @@
+{
+  "speed": [
+    {
+      "if": "average_slope > 12",
+      "limit_to": "2"
+    }
+  ]
+}
