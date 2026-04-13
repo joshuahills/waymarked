@@ -1,7 +1,7 @@
+namespace Waymarked.Routing.Tests;
+
 using FluentAssertions;
 using Waymarked.Routing;
-
-namespace Waymarked.Routing.Tests;
 
 public class RouteRequestTests
 {

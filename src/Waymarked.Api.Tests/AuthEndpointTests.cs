@@ -1,9 +1,9 @@
-using System.Net;
-using System.Net.Http.Json;
+namespace Waymarked.Api.Tests;
+
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
-
-namespace Waymarked.Api.Tests;
+using System.Net;
+using System.Net.Http.Json;
 
 /// <summary>
 /// Integration tests for the ASP.NET Core Identity auth endpoints.
@@ -43,7 +43,7 @@ public class AuthEndpointTests : IClassFixture<AuthWebApplicationFactory>
     private static string UniqueEmail() => $"test-{Guid.NewGuid():N}@waymarked.test";
 
     private static object RegisterBody(string email, string password) => new { email, password };
-    private static object LoginBody(string email, string password)    => new { email, password };
+    private static object LoginBody(string email, string password) => new { email, password };
 
     /// <summary>Registers a fresh user and returns their email address.</summary>
     private async Task<string> RegisterUser(HttpClient client, string? password = null)
@@ -93,7 +93,7 @@ public class AuthEndpointTests : IClassFixture<AuthWebApplicationFactory>
             "Identity rejects a user with a null email");
     }
 
-    [Fact(Skip = "Null password causes an unhandled exception in Identity (500). Brand must null-check the password field before calling UserManager.CreateAsync. Add: if (string.IsNullOrEmpty(req.Password)) return Results.ValidationProblem(...)")]
+    [Fact]
     public async Task Register_MissingPassword_Returns400()
     {
         var client = CreateClient();
@@ -160,7 +160,7 @@ public class AuthEndpointTests : IClassFixture<AuthWebApplicationFactory>
             "a successful login must set an auth cookie via Set-Cookie header");
         cookies!.Should().Contain(c =>
             c.Contains(".AspNetCore.", StringComparison.OrdinalIgnoreCase) ||
-            c.Contains("Identity",    StringComparison.OrdinalIgnoreCase),
+            c.Contains("Identity", StringComparison.OrdinalIgnoreCase),
             "Set-Cookie must include the ASP.NET Core Identity application cookie");
     }
 
@@ -201,7 +201,7 @@ public class AuthEndpointTests : IClassFixture<AuthWebApplicationFactory>
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
-    [Fact(Skip = "Brand's login endpoint has no input validation — missing fields return 401, not 400. Add validation to the login endpoint to enable this test.")]
+    [Fact]
     public async Task Login_MissingEmail_Returns400()
     {
         var client = CreateClient();
@@ -212,7 +212,7 @@ public class AuthEndpointTests : IClassFixture<AuthWebApplicationFactory>
             "missing email should be a 400, not a silent 401");
     }
 
-    [Fact(Skip = "Brand's login endpoint has no input validation — missing fields return 401, not 400. Add validation to the login endpoint to enable this test.")]
+    [Fact]
     public async Task Login_MissingPassword_Returns400()
     {
         var client = CreateClient();
@@ -249,7 +249,7 @@ public class AuthEndpointTests : IClassFixture<AuthWebApplicationFactory>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
-    [Fact(Skip = "Brand's ConfigureApplicationCookie is missing OnRedirectToLogin → 401. The /api/auth/me endpoint returns 302 (redirect to login page) instead of 401, so session clearing cannot be verified this way. Brand must add: options.Events.OnRedirectToLogin = ctx => { ctx.Response.StatusCode = 401; return Task.CompletedTask; };")]
+    [Fact]
     public async Task Logout_ClearsSession_MeReturns401Afterwards()
     {
         var client = CreateClient();
@@ -286,7 +286,7 @@ public class AuthEndpointTests : IClassFixture<AuthWebApplicationFactory>
         body.Should().Contain(email, "the /me response must include the authenticated user's email");
     }
 
-    [Fact(Skip = "Brand's ConfigureApplicationCookie is missing OnRedirectToLogin → 401. Unauthenticated requests to /api/auth/me return 302 instead of 401. Brand must add: options.Events.OnRedirectToLogin = ctx => { ctx.Response.StatusCode = 401; return Task.CompletedTask; };")]
+    [Fact]
     public async Task Me_Unauthenticated_Returns401()
     {
         var client = CreateClient();

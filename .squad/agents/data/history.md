@@ -12,6 +12,29 @@
 
 _(none yet — project just started)_
 
+## Core Context
+
+### GraphHopper & OSM Data for UK Route Planning (2026-04-12 → 2026-04-14)
+
+**Data Stack Decision:** OpenStreetMap (OSM) + GraphHopper for all routing. Validated for UK use via footpath coverage analysis and custom routing profile tuning.
+
+**OSM Extracts:** Scotland recommended for dev (~200MB, representative terrain, fast build 5-10 min). Full GB for production (~1.5GB, 20-40 min, 8–12GB RAM required).
+
+**Routing Profiles:** Two custom JSON-based models in `infra/graphhopper/data/`:
+- **foot.json** — Pedestrian focus, penalises motorways, reduces primary/secondary road speed, prioritises footways (1.5x) + paths (1.2x). `distance_influence: 80` balances accuracy with quality. Suitable for urban/suburban, short routes (<10km).
+- **hike.json** — Elevation-aware, steep slope penalties (>15° @ 0.6x, 10–15° @ 0.8x), hiking-rated path bonus (1.4x), bridleway bonus (1.2x). `distance_influence: 60` sacrifices distance accuracy for terrain preference. Suitable for scenic/longer routes (8+ km).
+- **foot_elevation.json** — Shared elevation logic; speed cap on very steep slopes (avg >12° limit to 2).
+
+**Elevation Provider:** SRTM (90m, auto-download from NASA) for dev spike. OS Terrain 50 (50m, ±2.5m RMSE) deferred to production — requires manual download + format conversion.
+
+**Round-Trip Accuracy Findings:** GraphHopper's round-trip algorithm is probabilistic (±20–40% variance depending on network density). Dense areas (Lake District, Peak District) ±10–15%. Sparse uplands (Cairngorms, Pennines) ±25–40%. Client-side retries mitigate via seed diversity + tolerance bands (default 15%). UX should show "Expected range" not "Target".
+
+**UK Coverage:** OSM + Valhalla/GraphHopper sufficient for MVP. Critical application-layer gaps: footpath network sparsity in remote areas, profile weighting tuning, elevation-corrected distance (product decision).
+
+**Next Steps:** Regional coverage analysis (areas with poor PROW tagging). Profile tuning for scenic preference weighting. Alternative route selection (3 candidates per request, pick closest to target distance).
+
+---
+
 ## Learnings
 
 ### 2026-04-12: GraphHopper Custom Profile Files Implementation

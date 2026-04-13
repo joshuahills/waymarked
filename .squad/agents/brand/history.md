@@ -16,6 +16,28 @@
 - `infra/graphhopper/test-route.sh` — Bash test script (Edinburgh route)
 - `infra/graphhopper/test-route.ps1` — PowerShell test script (Edinburgh route)
 
+## Core Context
+
+### Backend Architecture Summary (2026-04-12 → 2026-04-14)
+
+**Stack:** C# .NET 10 + Aspire 13, ASP.NET Core minimal APIs, PostgreSQL via EF Core Identity, GraphHopper Java routing engine in Docker container.
+
+**Frontend:** Vanilla HTML/CSS/JS (no build step) hosted in ASP.NET Core static files, reverse-proxied via YARP to API (cookies transparent).
+
+**Routing:** GraphHopper Docker container (local build from Maven Central JAR) exposes `/api/route` endpoint; Aspire orchestrates container lifecycle. Scotland OSM extract recommended for dev (~200MB, 5-10 min build), full GB for production.
+
+**Auth:** ASP.NET Core Identity + PostgreSQL, cookie-based (HttpOnly, SameSite=Strict, 14-day sliding expiry). Register/Login/Logout/GetMe endpoints. Schema created via `EnsureCreatedAsync()` at startup (migrations future). Input validation: null guards + error response format (flat `{ errors: [...] }` array). Cookie `SecurePolicy.SameAsRequest` for HTTP dev + HTTPS prod compatibility.
+
+**Observability:** OpenTelemetry instrumentation wired into all services via Aspire. EF Core + SQL Client tracing captures database queries as spans in dashboard.
+
+**Round-Trip Routing:** GraphHopper native `round_trip` mode + client-side retry logic (up to 4 attempts, 15% distance tolerance default, seed diversity per retry).
+
+**Distance Bounds Validation:** Client validates 500m–100km round-trip distance after unit conversion (km/miles → metres). A→B routes unaffected.
+
+**Key Learning:** Token remapping in dark mode requires explicit pseudo-state overrides (e.g., button hover states need hardcoded `#ffffff` not `var(--clr-white)` which remaps).
+
+---
+
 ## Learnings
 
 ### GraphHopper Dockerfile (Local Build) (2026-04-12)

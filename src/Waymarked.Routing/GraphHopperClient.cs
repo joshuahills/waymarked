@@ -1,7 +1,7 @@
-using System.Text.Json;
-using Microsoft.Extensions.Logging;
-
 namespace Waymarked.Routing;
+
+using Microsoft.Extensions.Logging;
+using System.Text.Json;
 
 public class GraphHopperClient(HttpClient httpClient, ILogger<GraphHopperClient> logger)
 {

@@ -1,10 +1,10 @@
-using System.Net;
-using System.Text.Json;
+namespace Waymarked.Routing.Tests;
+
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
+using System.Net;
+using System.Text.Json;
 using Waymarked.Routing;
-
-namespace Waymarked.Routing.Tests;
 
 /// <summary>
 /// Tests GraphHopperClient query string construction by intercepting HttpClient requests

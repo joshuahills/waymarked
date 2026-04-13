@@ -1,14 +1,14 @@
-using System.Net;
-using System.Text.Json;
+namespace Waymarked.Api.Tests;
+
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using System.Net;
+using System.Text.Json;
 using Waymarked.Api.Data;
 using Waymarked.Routing;
-
-namespace Waymarked.Api.Tests;
 
 /// <summary>
 /// Custom WebApplicationFactory that replaces the real GraphHopper HttpClient

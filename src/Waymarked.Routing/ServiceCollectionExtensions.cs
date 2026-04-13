@@ -1,6 +1,6 @@
-using Microsoft.Extensions.DependencyInjection;
-
 namespace Waymarked.Routing;
+
+using Microsoft.Extensions.DependencyInjection;
 
 public static class ServiceCollectionExtensions
 {

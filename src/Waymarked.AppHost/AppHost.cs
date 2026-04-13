@@ -2,6 +2,9 @@ var builder = DistributedApplication.CreateBuilder(args);
 
 builder.AddDockerComposeEnvironment("env");
 
+var db = builder.AddPostgres("db")
+    .AddDatabase("waymarked");
+
 // In CI, use the pre-built image (graph already on disk) to avoid a 5-min rebuild.
 var prebuiltImage = Environment.GetEnvironmentVariable("GRAPHHOPPER_PREBUILT_IMAGE");
 
@@ -28,8 +31,10 @@ graphhopper
 // CI config-ci.yml builds the graph without elevation; disable elevation requests to match.
 var api = builder.AddProject<Projects.Waymarked_Api>("waymarked-api", launchProfileName: "http")
     .WithReference(graphhopper.GetEndpoint("http"))
+    .WithReference(db)
     .WithHttpHealthCheck("/health", endpointName: "http")
     .WaitFor(graphhopper)
+    .WaitFor(db)
     .WithEnvironment("GRAPHHOPPER__ELEVATIONENABLED", string.IsNullOrEmpty(prebuiltImage) ? "true" : "false");
 
 var web = builder.AddProject<Projects.Waymarked_Web>("waymarked-web", launchProfileName: "http")

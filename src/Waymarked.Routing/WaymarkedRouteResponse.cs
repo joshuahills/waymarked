@@ -14,10 +14,10 @@ public record WaymarkedRouteResponse
     public static WaymarkedRouteResponse FromRouteResponse(RouteResponse response, bool isRoundTrip)
     {
         var firstPath = response.Paths[0];
-        
+
         var distanceKm = Math.Round(firstPath.Distance / 1000, 2);
         var distanceMiles = Math.Round(firstPath.Distance / 1609.344, 2);
-        
+
         var durationFormatted = FormatDuration(firstPath.Time);
 
         return new WaymarkedRouteResponse
@@ -43,7 +43,7 @@ public record WaymarkedRouteResponse
         {
             return $"{hours}h {minutes}m";
         }
-        
+
         return $"{minutes}m";
     }
 }

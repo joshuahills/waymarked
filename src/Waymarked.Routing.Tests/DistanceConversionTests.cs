@@ -1,6 +1,6 @@
-using FluentAssertions;
-
 namespace Waymarked.Routing.Tests;
+
+using FluentAssertions;
 
 /// <summary>
 /// Tests for distance unit conversion (km/mi → metres).

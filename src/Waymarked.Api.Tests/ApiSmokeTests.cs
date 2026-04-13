@@ -1,12 +1,10 @@
+namespace Waymarked.Api.Tests;
+
+using FluentAssertions;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using FluentAssertions;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
 using Waymarked.Routing;
-
-namespace Waymarked.Api.Tests;
 
 /// <summary>
 /// Integration smoke tests for the Waymarked API using WebApplicationFactory.
@@ -37,7 +35,7 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
         var payload = new
         {
             from = new[] { 51.5074, -0.1278 },
-            to   = new[] { 53.4808, -2.2426 },
+            to = new[] { 53.4808, -2.2426 },
             profile = "hike"
         };
 
@@ -140,7 +138,7 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
         var payload = new
         {
             from = new[] { 48.8566, 2.3522 },
-            to   = new[] { 51.5074, -0.1278 }, // London is valid, but From should fail first
+            to = new[] { 51.5074, -0.1278 }, // London is valid, but From should fail first
             profile = "hike"
         };
 
@@ -254,11 +252,11 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
 
         var body = await response.Content.ReadAsStringAsync();
 
-        body.Should().Contain("<gpx",       "GPX files must start with a <gpx root element");
-        body.Should().Contain("<trk>",      "GPX files must contain a track element");
-        body.Should().Contain("<trkpt",     "GPX files must contain track-point elements");
-        body.Should().Contain("lat=",       "track points must carry a lat attribute");
-        body.Should().Contain("lon=",       "track points must carry a lon attribute");
+        body.Should().Contain("<gpx", "GPX files must start with a <gpx root element");
+        body.Should().Contain("<trk>", "GPX files must contain a track element");
+        body.Should().Contain("<trkpt", "GPX files must contain track-point elements");
+        body.Should().Contain("lat=", "track points must carry a lat attribute");
+        body.Should().Contain("lon=", "track points must carry a lon attribute");
     }
 
     [Fact]
@@ -277,8 +275,8 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
 
         var body = await response.Content.ReadAsStringAsync();
 
-        body.Should().Contain("<kml",          "KML files must have a <kml root element");
-        body.Should().Contain("<LineString>",  "KML route must be represented as a LineString");
+        body.Should().Contain("<kml", "KML files must have a <kml root element");
+        body.Should().Contain("<LineString>", "KML route must be represented as a LineString");
         body.Should().Contain("<coordinates>", "KML LineString must contain a <coordinates> element");
     }
 

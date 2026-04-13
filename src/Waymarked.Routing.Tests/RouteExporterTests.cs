@@ -1,7 +1,7 @@
+namespace Waymarked.Routing.Tests;
+
 using FluentAssertions;
 using Waymarked.Routing;
-
-namespace Waymarked.Routing.Tests;
 
 /// <summary>
 /// Unit tests for <see cref="RouteExporter"/> — GPX, KML, and GeoJSON output.
@@ -20,13 +20,13 @@ public class RouteExporterTests
     /// </summary>
     private static WaymarkedRouteResponse BuildSampleRoute() => new()
     {
-        DistanceKm      = 5.5,
-        DistanceMiles   = 3.4,
+        DistanceKm = 5.5,
+        DistanceMiles = 3.4,
         DurationFormatted = "1h 10m",
-        IsRoundTrip     = true,
+        IsRoundTrip = true,
         Points = new RoutePoints
         {
-            Type        = "LineString",
+            Type = "LineString",
             Coordinates = [[-3.1367, 54.5994], [-3.14, 54.61]]
         },
         Instructions =

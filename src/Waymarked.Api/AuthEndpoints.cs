@@ -1,7 +1,7 @@
+namespace Waymarked.Api;
+
 using Microsoft.AspNetCore.Identity;
 using Waymarked.Api.Data;
-
-namespace Waymarked.Api;
 
 internal static class AuthEndpoints
 {

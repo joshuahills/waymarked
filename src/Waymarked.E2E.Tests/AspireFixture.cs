@@ -1,11 +1,11 @@
+namespace Waymarked.E2E.Tests;
+
 using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Projects;
 using Xunit;
-
-namespace Waymarked.E2E.Tests;
 
 /// <summary>
 /// xunit fixture that boots the full Aspire AppHost (GraphHopper + waymarked-api + waymarked-web)

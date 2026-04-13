@@ -1,5 +1,5 @@
-using Microsoft.AspNetCore.Identity;
-
 namespace Waymarked.Api.Data;
+
+using Microsoft.AspNetCore.Identity;
 
 public class ApplicationUser : IdentityUser;

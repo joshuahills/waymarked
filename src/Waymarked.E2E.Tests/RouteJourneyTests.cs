@@ -1,8 +1,8 @@
+namespace Waymarked.E2E.Tests;
+
 using FluentAssertions;
 using Microsoft.Playwright;
 using Xunit;
-
-namespace Waymarked.E2E.Tests;
 
 /// <summary>
 /// End-to-end Playwright tests driven against the full Aspire stack
@@ -129,8 +129,8 @@ public class RouteJourneyTests : IClassFixture<AspireFixture>
             // on #endSearch needed (and it may be disabled after updateFieldStates fires).
             await page.EvalOnSelectorAsync("#startLat", "el => el.value = '50.7017'");
             await page.EvalOnSelectorAsync("#startLon", "el => el.value = '-1.2986'");
-            await page.EvalOnSelectorAsync("#endLat",   "el => el.value = '50.7274'");
-            await page.EvalOnSelectorAsync("#endLon",   "el => el.value = '-1.1616'");
+            await page.EvalOnSelectorAsync("#endLat", "el => el.value = '50.7274'");
+            await page.EvalOnSelectorAsync("#endLon", "el => el.value = '-1.1616'");
 
             // Plan
             await page.ClickAsync("button:has-text('Plan Route')");
@@ -247,13 +247,13 @@ public class RouteJourneyTests : IClassFixture<AspireFixture>
             await page.WaitForSelectorAsync("#stats",
                 new PageWaitForSelectorOptions
                 {
-                    State   = WaitForSelectorState.Visible,
+                    State = WaitForSelectorState.Visible,
                     Timeout = 30_000
                 });
 
             // Toggle button must be visible; steps list must start hidden
             var stepsToggle = page.Locator("#stepsToggle");
-            var stepsList   = page.Locator("#stepsList");
+            var stepsList = page.Locator("#stepsList");
 
             (await stepsToggle.IsVisibleAsync()).Should().BeTrue(
                 "#stepsToggle should be visible after a route is planned");
@@ -311,7 +311,7 @@ public class RouteJourneyTests : IClassFixture<AspireFixture>
             await page.WaitForSelectorAsync("#stats",
                 new PageWaitForSelectorOptions
                 {
-                    State   = WaitForSelectorState.Visible,
+                    State = WaitForSelectorState.Visible,
                     Timeout = 30_000
                 });
 

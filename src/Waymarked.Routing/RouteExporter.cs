@@ -1,9 +1,8 @@
+namespace Waymarked.Routing;
+
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
-
-namespace Waymarked.Routing;
 
 /// <summary>
 /// Converts a <see cref="WaymarkedRouteResponse"/> into GPX, KML, or GeoJSON bytes
