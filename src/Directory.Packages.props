@@ -27,6 +27,14 @@
     
     <!-- Aspire hosting integrations -->
     <PackageVersion Include="Aspire.Hosting.Docker" Version="13.2.2" />
+    <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.2.2" />
+
+    <!-- Aspire client integrations -->
+    <PackageVersion Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="13.2.2" />
+
+    <!-- Identity / EF Core -->
+    <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.5" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.5" />
 
     <!-- Aspire testing -->
     <PackageVersion Include="Aspire.Hosting.Testing" Version="13.2.2" />
