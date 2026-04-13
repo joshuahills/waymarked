@@ -37,7 +37,7 @@ var api = builder.AddProject<Projects.Waymarked_Api>("waymarked-api", launchProf
     .WaitFor(db)
     .WithEnvironment("GRAPHHOPPER__ELEVATIONENABLED", string.IsNullOrEmpty(prebuiltImage) ? "true" : "false");
 
-var web = builder.AddProject<Projects.Waymarked_Web>("waymarked-web", launchProfileName: "http")
+var web = builder.AddProject<Projects.Waymarked_Web>("waymarked-web", launchProfileName: "https")
     .WithReference(api)
     .WaitFor(api);
 

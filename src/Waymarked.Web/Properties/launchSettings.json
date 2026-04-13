@@ -8,7 +8,7 @@
       },
       "applicationUrl": "http://waymarked.dev.localhost:2008"
     },
-    "Waymarked.Web": {
+    "https": {
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {
