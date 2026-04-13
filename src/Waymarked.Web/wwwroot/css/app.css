@@ -629,6 +629,12 @@ button:disabled {
     border-color: #888;
 }
 
+/* export-btn hover: --clr-white remaps to #2a2a2e in dark mode, making
+   hover text near-black on dark-green. Pin to literal white. */
+[data-theme="dark"] .export-btn:hover {
+    color: #ffffff;
+}
+
 /* ── Dark mode: Leaflet control overrides ───────────────────────────── */
 [data-theme="dark"] .leaflet-bar a,
 [data-theme="dark"] .leaflet-control-zoom a {

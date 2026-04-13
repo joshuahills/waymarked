@@ -12,189 +12,34 @@
 
 _(none yet — project just started)_
 
+## Core Context
+
+### Founding Decisions (2026-12-04)
+
+The frontend was bootstrapped as an ASP.NET Core web app with YARP reverse proxy, serving vanilla HTML/CSS/JS with Leaflet 1.9.4 from CDN. No build step. Stack includes:
+- **Web Stack:** Leaflet map (UK-focused), sidebar form for lat/lon inputs, stats panel with distance/time/steps
+- **Design:** Mobile-first, clean hierarchy, earth-toned palette (`--clr-earth: #2d5a27`)
+- **API Integration:** YARP proxies `/api/*` to `waymarked-api` service via Aspire service discovery
+- **Initial Tile Layer:** OpenTopoMap (raster, UK topo detail)
+- **Route Display:** Stacked polylines — dark outline (#1a0800) + coloured fill (initially orange, then magenta #E0007A)
+
+### Profile & UX Enhancements (2026-12-04)
+
+- Profile dropdown displays dynamic hint text (foot/hike descriptions)
+- Collapsible steps list in stats panel shows turn-by-turn instructions (numbered, with distances)
+- Route polyline initially blue → orange (for contrast vs water) → magenta (final, avoids road conflicts)
+
+### Dark Mode Implementation (2026-12-04 → 2026-04-13)
+
+Implemented dark mode via CSS tokens + localStorage + OS preference detection. Toggle button (🌙/☀️) in header. Initial tile approach was CSS filter on `.leaflet-tile-pane` (cheap but produced urban artefacts). Later **resolved in v2** by swapping tile provider on theme change: CartoDB Dark Matter (dark) + OpenTopoMap (light).
+
+**Known gotchas:** Button text legibility (fixed via hardcoded white text), header title contrast (fixed via !important rule).
+
+---
+
 ## Learnings
 
-### Waymarked.Web Frontend Created (2026-12-04)
-
-**Decision:** Built frontend as ASP.NET Core web app with YARP reverse proxy and static file serving
-
-**Key Files:**
-- `src/Waymarked.Web/Waymarked.Web.csproj` — Web project with YARP 2.2.0
-- `src/Waymarked.Web/Program.cs` — YARP proxy config + static files
-- `src/Waymarked.Web/appsettings.json` — YARP routing rules (`/api/{**catch-all}` → waymarked-api)
-- `src/Waymarked.Web/wwwroot/index.html` — Single-page Leaflet app
-
-**Frontend Stack:**
-- No build step — plain HTML/CSS/JS for simplicity
-- Leaflet 1.9.4 from CDN for map rendering
-- OpenTopoMap tiles (UK-focused topo layer)
-- Clean, mobile-first design with sidebar form and full-height map
-
-**Map UX:**
-- Defaults to UK view (54.0, -2.0, zoom 6)
-- Lat/lon inputs for start/end points (no geocoding yet — that's next)
-- End point optional — defaults to start for round trips
-- Route displayed as blue polyline with auto-fit bounds
-- Stats panel shows distance (km/mi), time estimate, instruction count
-
-**API Integration:**
-- YARP proxies `/api/*` to `waymarked-api` service (via Aspire service discovery)
-- Avoids CORS issues by keeping API calls on same origin
-- Frontend makes relative `/api/routes` POST with `{from, to, profile}`
-
-**Aspire Integration:**
-- Added web project to AppHost with `.WithReference(api).WaitFor(api)`
-- Added ProjectReference in AppHost.csproj
-- Used `AddServiceDefaults()` for observability/health checks
-
-### Profile Description Hint (2026-12-04)
-
-**Decision:** Added dynamic profile description below the Route Profile dropdown
-
-**Key Files:**
-- `src/Waymarked.Web/wwwroot/index.html` — Added `<small id="profile-description" class="helper-text">` after `<select id="profile">`
-- `src/Waymarked.Web/wwwroot/js/map.js` — Added DOM refs: `profileSelect`, `profileDescription`
-- `src/Waymarked.Web/wwwroot/js/route.js` — Added `profileDescriptions` map, `updateProfileDescription()` function, wired to `change` event and called on load
-
-**UX Pattern:**
-- Reused existing `.helper-text` CSS class (0.78rem, `--clr-muted`) — no new styles needed
-- `foot` → "Prefers footpaths and pavements. Good for shorter walks on mixed terrain."
-- `hike` → "Prefers trails and bridleways, avoids steep terrain. Best for longer scenic routes."
-- Description initialised on page load to match default `foot` selection
-- Updates instantly on dropdown change — no animation
-
----
-
-### Route Polyline Colour — High-Contrast Orange (2026-12-04)
-
-**Decision:** Replaced blue route polyline with vivid orange (#FF6B00) + dark outline for strong contrast against OpenTopoMap water features
-
-**Key Files:**
-- `src/Waymarked.Web/wwwroot/js/route.js` — Replaced single `L.polyline` with `L.featureGroup` of two stacked polylines
-
-**Problem:** `#007bff` (blue) blended into OpenTopoMap's blue-grey rivers, streams and brooks, making the route hard to follow through river valleys.
-
-**Solution:** Two stacked polylines via `L.featureGroup`:
-- **Outline:** `#1a0800`, weight 7, opacity 0.55 — dark border to lift the line off any tile colour (woodland green, path beige, etc.)
-- **Fill:** `#FF6B00`, weight 4, opacity 0.95 — vivid orange that reads clearly against water blue at all zoom levels
-
-**Why orange:** Strong hue contrast against blue (complementary-adjacent on colour wheel). Consistent with existing brand palette (`--clr-trail: #c8590a`). Avoids conflict with green woodland, brown paths, and grey rock tiles on OpenTopoMap.
-
-**Implementation note:** `L.featureGroup` wraps both polylines so `map.removeLayer(routeLayer)` and `routeLayer.getBounds()` continue to work without API changes elsewhere.
-
----
-
-### Collapsible Route Steps List (2026-12-04)
-
-**Decision:** Added collapsible steps toggle to stats panel for turn-by-turn route instructions
-
-**Key Files:**
-- `src/Waymarked.Web/wwwroot/index.html` — Added steps button and list container to stats panel
-- `src/Waymarked.Web/wwwroot/js/map.js` — Added DOM refs for stepsToggle and stepsList
-- `src/Waymarked.Web/wwwroot/js/route.js` — Added showSteps function, toggle handler, integrated with route display
-- `src/Waymarked.Web/wwwroot/css/app.css` — Added styling for toggle button and numbered steps list
-
-**UX Pattern:**
-- Toggle button hidden by default (only shows when route is loaded)
-- Starts collapsed ("▾ Show steps")
-- Filters out finish instruction (sign === 4)
-- Shows numbered instructions with inline distances
-- Distance formatting: <100m shows metres, ≥100m shows km with one decimal
-- Clean visual hierarchy: step number in earth-green, distance in muted grey, right-aligned
-
-**Implementation Details:**
-- hideStats() now clears steps state (toggle hidden, list empty, display none)
-- showSteps() called immediately after showStats() with data.instructions
-- Toggle switches between "▾ Show steps" and "▴ Hide steps"
-- CSS uses flexbox for step layout with auto-margin for distance alignment
-- Overrides global button::after arrow with empty content for toggle button
-
----
-
-### Route Polyline Colour — Magenta (2026-12-04)
-
-**Decision:** Changed route polyline fill from orange (#FF6B00) to magenta (#E0007A)
-
-**Key Files:**
-- `src/Waymarked.Web/wwwroot/js/route.js` — updated `color` on the fill polyline
-
-**Problem:** Orange (#FF6B00) conflicts with A roads and motorways on OpenTopoMap, which render in orange/red tones — making the route indistinguishable from road overlays.
-
-**Solution:** Magenta (#E0007A) occupies the hue gap between:
-- Blue/cyan (water — rivers, lakes, streams)
-- Orange/red/yellow (roads — motorways, A roads, B roads)
-- Green (woodland, parks)
-
-Reads clearly at all zoom levels against OpenTopoMap tiles. The dark outline (#1a0800, weight 7) is unchanged.
-
-**Commit:** 24309ba
-
----
-
-### Dark Mode Toggle (2026-12-04)
-
-**Decision:** Implemented dark mode via CSS custom property overrides on `[data-theme="dark"]` with OS preference detection, localStorage persistence, and a 🌙/☀️ toggle button in the header.
-
-**Key Files:**
-- `src/Waymarked.Web/wwwroot/css/app.css` — Added `[data-theme="dark"]` token block + Leaflet control overrides + hardcoded colour fixes
-- `src/Waymarked.Web/wwwroot/index.html` — Anti-FOUC inline script in `<head>`, `#theme-toggle` button in `<header>`
-- `src/Waymarked.Web/wwwroot/js/theme.js` — Toggle wiring, localStorage persistence, aria-label sync
-
-**Approach:**
-- CSS tokens (`--clr-stone`, `--clr-white`, `--clr-ink`, `--clr-muted`, `--clr-border`, `--clr-earth-lt`, `--clr-trail-lt`) redefined under `[data-theme="dark"]` on `<html>` — all tokenised surfaces update automatically
-- Anti-FOUC inline script runs before any paint: reads `localStorage.getItem('theme')`, falls back to `matchMedia('prefers-color-scheme: dark')`
-- Toggle button lives in the header (right edge via `margin-left:auto`) — uses emoji icons (🌙/☀️) with `aria-label` that flips on each press
-- Hardcoded colours that escaped the token system were patched individually: select SVG arrow stroke, error banner, steps-toggle hover, mode-btn.active-off hover
-
-**Leaflet dark overrides:**
-- Zoom bar, attribution, popup wrapper/tip all receive dark backgrounds and light text via `.leaflet-*` class overrides scoped to `[data-theme="dark"]`
-
-**Known limitation (resolved):**
-- OpenTopoMap raster tiles were initially undarkened in dark mode. This was later solved with a CSS filter on `.leaflet-tile-pane` — see Dark Map Tiles decision below.
-
-**Commit:** 1ae475d
-
----
-
-### Dark Mode Map Tiles — CSS Filter on Tile Pane (2026-12-04)
-
-**Decision:** Darkened OpenTopoMap raster tiles in dark mode using a CSS filter scoped to `.leaflet-tile-pane`
-
-**Key Files:**
-- `src/Waymarked.Web/wwwroot/css/app.css` — added `[data-theme="dark"] .leaflet-tile-pane` rule
-
-**Filter applied:**
-```css
-filter: invert(100%) hue-rotate(180deg);
-```
-
-- `invert(100%)` flips tile luminance so the pale cream/white base map goes dark
-- `hue-rotate(180deg)` rotates hues back to prevent the "colour negative" effect — green terrain stays greenish, water stays bluish
-
-**Scope:** Filter targets `.leaflet-tile-pane` only (the raster tile layer). The `.leaflet-overlay-pane` (SVG — route polylines, markers) is intentionally excluded. The magenta route polyline remains unchanged at `#E0007A` in both themes.
-
-**Supersedes:** The "Known limitation" note from the Dark Mode Toggle entry above. Tiles can now be darkened via this approach.
-
----
-
-### Header Title Colour Fix (2026-04-13)
-
-**Decision:** Pinned header h1 text to white with `!important` to ensure title remains visible in dark mode
-
-**Key Files:**
-- `src/Waymarked.Web/wwwroot/css/app.css` — Added `[data-theme="dark"] header h1` rule with explicit `color: white !important`
-
-**Problem:** The header h1 element was inheriting the dark mode text colour (`--clr-ink: #e8e8ea`), which resulted in very light/faded text that was barely visible against the green header background in dark mode.
-
-**Solution:** Explicitly pin h1 colour to pure white (`#ffffff`) within the dark mode scope. The `!important` flag ensures this overrides any cascading rules from the token system.
-
-**Result:** Title "Waymarked" now clearly readable in both light and dark modes.
-
-**Commit:** 6329fe5
-
----
-
-### Fix Button Dark Mode Styling (2026-04-13)
+### Dark Mode Button Styling Fix (2026-04-13)
 
 **Decision:** Fixed button text legibility in dark mode by forcing white text on all buttons
 
@@ -319,4 +164,26 @@ filter: invert(100%) hue-rotate(180deg);
 Both buttons now show white text on brand green background — readable, clearly interactive, consistent with light mode. No light mode impact.
 
 **Commit:** 559b7e6
+
+---
+
+### Fix Export Button Hover Text — Dark Mode (2025-01-27)
+
+**Decision:** Pinned export button (GPX, KML, GeoJSON) hover text to `#ffffff` in dark mode
+
+**Key Files:**
+- `src/Waymarked.Web/wwwroot/css/app.css` — Added `[data-theme="dark"] .export-btn:hover` rule
+
+**Problem:** Export buttons showed near-black text on hover in dark mode. The `.export-btn:hover` rule sets `color: var(--clr-white)`, which in dark mode resolves to `#2a2a2e` (near-black panel surface colour). Result: near-black text on dark-green (#2d5a27) hover background — effectively invisible.
+
+**Why the existing fix didn't catch it:** The earlier `[data-theme="dark"] button { color: #ffffff; }` rule sets base button text to white. However, `.export-btn:hover` explicitly declares `color: var(--clr-white)` which appears later in the cascade and wins, overriding the dark mode base fix.
+
+**Fix Applied:**
+```css
+[data-theme="dark"] .export-btn:hover {
+    color: #ffffff;
+}
+```
+
+Selector: `[data-theme="dark"] .export-btn:hover`. Minimal — only overrides `color` on the broken state. Background (`var(--clr-earth)`) is unaffected.
 
