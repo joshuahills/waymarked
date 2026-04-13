@@ -124,8 +124,8 @@ jobs:
 
       # Only runs on cache miss. Builds GraphHopper from the local Dockerfile,
       # then runs it once to produce the routing graph in infra/graphhopper/data/.
-      # The container is stopped once the /health endpoint responds — at that point
-      # the graph-cache/ and elevation-cache/ directories are fully populated.
+      # The container is stopped once the graph is fully built and GH is serving routes.
+      # Elevation tiles are downloaded from NASA SRTM on first run (~30s extra).
       - name: Build GraphHopper routing graph
         if: steps.gh-cache.outputs.cache-hit != 'true'
         run: |
@@ -136,7 +136,21 @@ jobs:
             -p 8989:8989 \
             graphhopper-ci
           echo "Waiting for GraphHopper to build the IoW graph and become ready..."
-          timeout 180 bash -c 'until curl -sf http://localhost:8989/health 2>/dev/null; do sleep 3; done'
+          echo "  (includes CH preprocessing for 2 profiles + SRTM elevation download)"
+          # Poll the route endpoint — returns 200 when fully ready, connection refused while building.
+          # 600s timeout: IoW graph + elevation tiles typically takes 3-6 minutes on CI.
+          if ! timeout 600 bash -c '
+            until curl -sf --max-time 5 \
+              "http://localhost:8989/route?profile=foot&point=50.7017,-1.2986&point=50.72,-1.16" \
+              > /dev/null 2>&1; do
+              sleep 5
+            done'; then
+            echo "::error::GraphHopper did not become ready within 600s"
+            echo "--- GraphHopper container logs ---"
+            docker logs gh-build 2>&1 || true
+            docker stop gh-build 2>/dev/null || true
+            exit 1
+          fi
           echo "GraphHopper is ready — stopping build container (graph is cached on disk)"
           docker stop gh-build
 
