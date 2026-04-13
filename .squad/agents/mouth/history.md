@@ -225,3 +225,49 @@ The earlier button text fix (commit 559b7e6) addressed the base state but missed
 
 **Key insight:** Token remapping creates dual-duty conflicts when the same token is used for both surfaces and text. The pattern to watch: any element setting `color: var(--clr-white)` in a pseudo-state (`:hover`, `:focus`, etc.) needs a dark-mode override. Future button-like elements should use explicit `#ffffff` instead of the token in interactive states.
 
+---
+
+### Geolocation — "Use My Location" (2026-04-13)
+
+**Status:** IMPLEMENTED  
+**Commit:** e5113c5
+
+Added "Use my location" (crosshair icon) button next to the Start Point field.
+
+**Key Files:**
+- `src/Waymarked.Web/wwwroot/index.html` — `.search-with-geoloc` wrapper, `#geolocBtn`, `#geolocError`
+- `src/Waymarked.Web/wwwroot/js/geolocation.js` — New file; all geolocation logic
+- `src/Waymarked.Web/wwwroot/css/app.css` — Button, error, and "you are here" marker styles
+
+**What it does:**
+- Calls `navigator.geolocation.getCurrentPosition()` on click
+- On success: reverse-geocodes via Nominatim, calls `setStartPoint()`, pans map to zoom 14, places pulsing blue "you are here" dot
+- On error: shows friendly inline error with `role="alert"` for a11y
+- On unsupported browsers: hides button entirely
+
+**Dark mode gotcha (same pattern as buttons):** The `.geoloc-btn:hover` pseudo-class needs explicit `color: #ffffff` override in dark mode to prevent specificity issues.
+
+**Touch target:** Button is exactly `44×44px` — meets mobile HIG minimum.
+
+**"You are here" marker:** Blue pulsing dot (`#007AFF`, CSS animation `yah-pulse`) — distinct from route S/E markers (green/red pin icons). Implemented as a Leaflet DivIcon with CSS classes.
+
+**Script load order:** `map.js → geocoder.js → geolocation.js → markers.js → ...` (geolocation.js depends on `reverseGeocode`, `coordLabel`, `setStartPoint` from geocoder.js, and `map` global from map.js)
+
+---
+
+### README Updates (2026-04-13)
+
+**Status:** COMPLETED  
+**Commits:** a10e14d (root + src/)
+
+Updated root README.md and src/README.md:
+- Renamed ".NET Aspire" to "Aspire" throughout
+- Version bump: Aspire 9 → 13
+- Enhanced features list: added dark mode, geolocation, export support
+- Updated prerequisites: aspire CLI tool
+- Updated run command: `aspire run`
+- Expanded Projects section with Waymarked.Web + all 3 test projects (Waymarked.Routing.Tests, Waymarked.Api.Tests, [pending])
+- Filled Testing section with actual test projects and `dotnet test` instructions
+- Updated architecture diagram
+- Removed stale squad inbox reference
+

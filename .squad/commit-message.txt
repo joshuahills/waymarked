@@ -1,0 +1,16 @@
+Scribe: Process Mouth batch (geoloc + README updates)
+
+- Added orchestration log: 2026-04-13-225222-mouth.md
+- Added session log: 2026-04-13-225222-geoloc-and-readme.md
+- Merged mouth-geoloc.md decision to decisions.md (geolocation feature)
+- Deleted merged inbox file
+- Appended geolocation, README work to mouth/history.md
+
+Commits processed:
+- e5113c5 Mouth: Add "Use my location" geolocation feature
+- a10e14d Mouth: Update root README.md (Aspire 9→13, features)
+- a10e14d Mouth: Update src/README.md (prerequisites, run, projects)
+
+Decision merged: Add "Use My Location" Geolocation Feature (IMPLEMENTED)
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
