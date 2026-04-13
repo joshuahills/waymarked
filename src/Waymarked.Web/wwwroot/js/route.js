@@ -156,16 +156,16 @@ form.addEventListener('submit', async e => {
         if (routeLayer) map.removeLayer(routeLayer);
         clearArrowMarkers();
 
-        // Two stacked polylines: dark outline underneath, vivid orange on top.
-        // Orange (#FF6B00) has strong contrast against OpenTopoMap's blue-grey
-        // water features (rivers, streams) where pure blue routes disappear.
+        // Two stacked polylines: dark outline underneath, magenta fill on top.
+        // Magenta (#E0007A) sits in the hue gap between OpenTopoMap's blue/cyan
+        // water, orange/red roads, and green woodland — readable at all zoom levels.
         const routeOutline = L.polyline(coordinates, {
             color: '#1a0800',
             weight: 7,
             opacity: 0.55
         });
         const routeFill = L.polyline(coordinates, {
-            color: '#FF6B00',
+            color: '#E0007A',
             weight: 4,
             opacity: 0.95
         });
