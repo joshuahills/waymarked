@@ -1,7 +1,9 @@
 // ── Map initialisation ──────────────────────────────────────────────
 const map = L.map('map').setView([54.0, -2.0], 6);
 
-L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+// Exposed on window so theme.js can swap tile layers on dark-mode toggle.
+window.map = map;
+window.tileLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
     maxZoom: 17,
     attribution: 'Map data: © OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap'
 }).addTo(map);
