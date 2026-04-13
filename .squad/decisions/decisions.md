@@ -769,3 +769,52 @@ Valhalla pedestrian costing does NOT natively support several hiking features. A
 **Full assessment:** See `docs/osm-coverage-uk.md` — living reference, updated as findings emerge.
 
 ---
+## Fix Export Button Hover Text — Dark Mode
+
+**Date:** 2025-01-27  
+**Author:** Mouth (Frontend Dev)  
+**Status:** Implemented  
+**Commit:** b5a70be
+
+### Decision
+
+Pin export button (GPX, KML, GeoJSON) hover text to #ffffff in dark mode.
+
+### Problem
+
+Export buttons displayed near-black text on hover in dark mode. The .export-btn:hover rule sets color: var(--clr-white), which in dark mode resolves to #2a2a2e (near-black panel surface colour). Result: near-black text on dark-green (#2d5a27) hover background — effectively invisible.
+
+### Root Cause Pattern
+
+The `--clr-white` token serves dual duty: it's used as both a *surface colour* (panels, card backgrounds) and as *text colour* (contrast on green buttons). The dark mode override correctly darkens surfaces but inadvertently breaks any `color: var(--clr-white)` usage on hover states.
+
+The existing `[data-theme="dark"] button { color: #ffffff; }` rule fixes the base button state but does not override the explicit `color: var(--clr-white)` set in `.export-btn:hover` — specificity is equal, but the hover rule appears later in the cascade and wins.
+
+### Fix Applied
+
+Added a targeted dark mode hover override in `src/Waymarked.Web/wwwroot/css/app.css`:
+
+\\\css
+/* export-btn hover: --clr-white remaps to #2a2a2e in dark mode, making
+   hover text near-black on dark-green. Pin to literal white. */
+[data-theme="dark"] .export-btn:hover {
+    color: #ffffff;
+}
+\\\
+
+**Selector used:** `[data-theme="dark"] .export-btn:hover`
+
+The fix is minimal and surgical — it only overrides the one property (`color`) on the one state (`hover`) that was broken. The background colour (`var(--clr-earth)`) is unaffected and renders correctly in both modes.
+
+### Files Modified
+
+- `src/Waymarked.Web/wwwroot/css/app.css` — Added dark mode hover text override
+
+### Quality
+
+- Minimal, surgical fix — only one property on one state
+- No light mode impact
+- Consistent with existing dark mode button fixes (commit 559b7e6)
+- Export buttons now readable on hover in both light and dark modes
+
+---

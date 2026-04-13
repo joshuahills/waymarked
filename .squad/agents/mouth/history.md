@@ -187,3 +187,16 @@ Both buttons now show white text on brand green background — readable, clearly
 
 Selector: `[data-theme="dark"] .export-btn:hover`. Minimal — only overrides `color` on the broken state. Background (`var(--clr-earth)`) is unaffected.
 
+---
+
+### Fix Export Button Hover Text — Dark Mode (Continued) (2026-04-13)
+
+**Status:** IMPLEMENTED  
+**Commit:** b5a70be
+
+The earlier button text fix (commit 559b7e6) addressed the base state but missed a cascade issue: the `.export-btn:hover` rule explicitly declares `color: var(--clr-white)`, which wins over the base `[data-theme="dark"] button { color: #ffffff; }` rule (equal specificity, later rule in cascade wins). This meant export buttons reverted to near-black text on hover in dark mode.
+
+**Fix:** Added `[data-theme="dark"] .export-btn:hover { color: #ffffff; }` to override the explicit colour on the hover state. Selector specificity now wins, and white text appears correctly on the dark-green hover background.
+
+**Key insight:** Token remapping creates dual-duty conflicts when the same token is used for both surfaces and text. The pattern to watch: any element setting `color: var(--clr-white)` in a pseudo-state (`:hover`, `:focus`, etc.) needs a dark-mode override. Future button-like elements should use explicit `#ffffff` instead of the token in interactive states.
+
