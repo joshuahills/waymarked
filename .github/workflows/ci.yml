@@ -131,20 +131,21 @@ jobs:
       # Only runs on cache miss. Builds GraphHopper from the local Dockerfile,
       # then runs it once to produce the routing graph in infra/graphhopper/data/.
       # The container is stopped once the graph is fully built and GH is serving routes.
-      # Elevation tiles are downloaded from NASA SRTM on first run (~30s extra).
+      # Elevation is disabled in config-ci.yml so no SRTM tiles are downloaded.
       - name: Build GraphHopper routing graph
         if: steps.gh-cache.outputs.cache-hit != 'true'
         run: |
           docker build -t graphhopper-ci infra/graphhopper/
-          docker run --rm -d --name gh-build \
+          # No --rm so the container persists after exit and we can capture crash logs.
+          docker run -d --name gh-build \
             -v "${{ github.workspace }}/infra/graphhopper/data:/data" \
             -v "${{ github.workspace }}/infra/graphhopper/config.yml:/data/config.yml:ro" \
             -p 8989:8989 \
             graphhopper-ci
           echo "Waiting for GraphHopper to build the IoW graph and become ready..."
-          echo "  (includes CH preprocessing for 2 profiles + SRTM elevation download)"
+          echo "  (CH preprocessing for 2 profiles; elevation disabled in CI config)"
           # Poll the route endpoint — returns 200 when fully ready, connection refused while building.
-          # 600s timeout: IoW graph + elevation tiles typically takes 3-6 minutes on CI.
+          # 600s timeout: IoW graph build typically takes 1-3 minutes on CI without elevation.
           if ! timeout 600 bash -c '
             until curl -sf --max-time 5 \
               "http://localhost:8989/route?profile=foot&point=50.7017,-1.2986&point=50.72,-1.16" \
@@ -154,11 +155,12 @@ jobs:
             echo "::error::GraphHopper did not become ready within 600s"
             echo "--- GraphHopper container logs ---"
             docker logs gh-build 2>&1 || true
-            docker stop gh-build 2>/dev/null || true
+            docker rm -f gh-build 2>/dev/null || true
             exit 1
           fi
           echo "GraphHopper is ready — stopping build container (graph is cached on disk)"
           docker stop gh-build
+          docker rm gh-build
 
       - name: Install Playwright browsers
         run: pwsh src/Waymarked.E2E.Tests/bin/Release/net10.0/playwright.ps1 install --with-deps
