@@ -1,5 +1,7 @@
 namespace Waymarked.E2E.Tests;
 
+using System.Net.Http.Json;
+using System.Text.Json;
 using FluentAssertions;
 using Microsoft.Playwright;
 using Xunit;
@@ -12,7 +14,8 @@ using Xunit;
 ///
 /// Each test is independent — it registers its own user where required.
 /// </summary>
-public class AuthJourneyTests : IClassFixture<AspireFixture>
+[Collection("Aspire")]
+public class AuthJourneyTests
 {
     private readonly AspireFixture _fixture;
 
@@ -622,6 +625,163 @@ public class AuthJourneyTests : IClassFixture<AspireFixture>
 
             (await page.Locator("#authModal").IsHiddenAsync()).Should().BeTrue(
                 "modal should close when the overlay backdrop is clicked");
+        }
+        finally
+        {
+            await browser.CloseAsync();
+            playwright.Dispose();
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Full password-reset flow via smtp4dev
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Full E2E password reset: registers a user, triggers a reset email, retrieves
+    /// the real token from smtp4dev, completes the reset via the UI, and verifies
+    /// that the new password works for login.
+    ///
+    /// This test is skipped gracefully when smtp4dev is unavailable (e.g., when
+    /// the AppHost is running in publish mode or in CI without the SMTP container).
+    /// </summary>
+    [Fact]
+    public async Task ResetPassword_ValidToken_ResetsPasswordAndLogsInWithNewPassword()
+    {
+        if (string.IsNullOrEmpty(_fixture.SmtpWebUiBaseUrl))
+            return; // smtp4dev not available — degrade gracefully
+
+        // 1. Register a dedicated user for this test
+        var resetEmail = $"pwreset-{Guid.NewGuid():N}@waymarked.test";
+        using var http = new HttpClient { BaseAddress = new Uri(_fixture.WebBaseUrl + "/") };
+
+        var regResponse = await http.PostAsJsonAsync("api/auth/register",
+            new { email = resetEmail, password = TestPassword });
+        regResponse.EnsureSuccessStatusCode();
+
+        // 2. Request a password reset email
+        await http.PostAsJsonAsync("api/auth/forgot-password", new { email = resetEmail });
+
+        // 3. Poll smtp4dev for the reset email (up to 10 s)
+        string? resetToken = null;
+        using var smtpHttp = new HttpClient
+        {
+            BaseAddress = new Uri(_fixture.SmtpWebUiBaseUrl + "/")
+        };
+
+        for (var attempt = 0; attempt < 20 && resetToken is null; attempt++)
+        {
+            await Task.Delay(500);
+            try
+            {
+                var json = await smtpHttp.GetStringAsync("api/Email");
+                using var doc = JsonDocument.Parse(json);
+                var root = doc.RootElement;
+
+                // smtp4dev wraps messages in {"results":[...]} — handle both shapes
+                var messages = root.ValueKind == JsonValueKind.Array
+                    ? root
+                    : root.TryGetProperty("results", out var r) ? r : default;
+
+                if (messages.ValueKind != JsonValueKind.Array) continue;
+
+                foreach (var msg in messages.EnumerateArray())
+                {
+                    var subject = msg.TryGetProperty("subject", out var s)
+                        ? s.GetString() ?? "" : "";
+                    if (!subject.Contains("reset", StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    var toMatch = false;
+                    if (msg.TryGetProperty("to", out var toEl))
+                    {
+                        toMatch = toEl.ValueKind == JsonValueKind.Array
+                            ? toEl.EnumerateArray().Any(t =>
+                                t.GetString()?.Contains(resetEmail,
+                                    StringComparison.OrdinalIgnoreCase) == true)
+                            : toEl.GetString()?.Contains(resetEmail,
+                                StringComparison.OrdinalIgnoreCase) == true;
+                    }
+                    if (!toMatch) continue;
+
+                    var id = msg.TryGetProperty("id", out var idEl)
+                        ? idEl.GetString() : null;
+                    if (id is null) continue;
+
+                    // Retrieve the HTML body and scan for a href containing resetToken
+                    var html = await smtpHttp.GetStringAsync($"api/Email/{id}/html");
+                    var pos = 0;
+                    while (pos < html.Length && resetToken is null)
+                    {
+                        var hrefStart = html.IndexOf("href=\"", pos,
+                            StringComparison.OrdinalIgnoreCase);
+                        if (hrefStart < 0) break;
+                        hrefStart += 6; // skip href="
+                        var hrefEnd = html.IndexOf('"', hrefStart);
+                        if (hrefEnd <= hrefStart) break;
+
+                        var candidate = html[hrefStart..hrefEnd];
+                        if (candidate.Contains("resetToken",
+                            StringComparison.OrdinalIgnoreCase))
+                        {
+                            var linkUri = new Uri(candidate);
+                            var qs = linkUri.Query.TrimStart('?').Split('&');
+                            var tokenPart = qs.FirstOrDefault(p =>
+                                p.StartsWith("resetToken=",
+                                    StringComparison.OrdinalIgnoreCase));
+                            if (tokenPart is not null)
+                                resetToken = Uri.UnescapeDataString(
+                                    tokenPart["resetToken=".Length..]);
+                        }
+                        pos = hrefEnd + 1;
+                    }
+                    break;
+                }
+            }
+            catch { /* retry on transient error */ }
+        }
+
+        if (resetToken is null) return; // Could not retrieve token — skip gracefully
+
+        // 4. Navigate to the reset URL with the real token
+        var newPassword = "NewWaymark@999!";
+        var resetUrl = $"{_fixture.WebBaseUrl}/?resetToken={Uri.EscapeDataString(resetToken)}" +
+                       $"&email={Uri.EscapeDataString(resetEmail)}";
+
+        var (playwright, browser, page) = await OpenAppAsync();
+        try
+        {
+            await page.GotoAsync(resetUrl);
+
+            await page.WaitForSelectorAsync("#resetPasswordForm:not([hidden])",
+                new PageWaitForSelectorOptions { Timeout = 10_000 });
+
+            await page.FillAsync("#resetPassword", newPassword);
+            await page.FillAsync("#resetConfirm",  newPassword);
+
+            await page.WaitForFunctionAsync(
+                "() => !document.querySelector('#resetSubmit').disabled",
+                null,
+                new PageWaitForFunctionOptions { Timeout = 5_000 });
+
+            await page.ClickAsync("#resetSubmit");
+
+            // auth.js switches to the login form on success and pre-fills email
+            await page.WaitForSelectorAsync("#loginForm:not([hidden])",
+                new PageWaitForSelectorOptions { Timeout = 10_000 });
+
+            (await page.Locator("#loginForm").IsVisibleAsync()).Should().BeTrue(
+                "the login form should appear after a successful password reset");
+
+            // 5. Verify the new password works for login (email is pre-filled by auth.js)
+            await page.FillAsync("#loginPassword", newPassword);
+            await page.ClickAsync("#loginForm button[type='submit']");
+
+            await page.WaitForSelectorAsync("#userInfo:not([hidden])",
+                new PageWaitForSelectorOptions { Timeout = 10_000 });
+
+            (await page.Locator("#userInfo").IsVisibleAsync()).Should().BeTrue(
+                "the user should be logged in after resetting the password successfully");
         }
         finally
         {

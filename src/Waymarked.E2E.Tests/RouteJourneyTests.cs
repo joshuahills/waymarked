@@ -8,10 +8,11 @@ using Xunit;
 /// End-to-end Playwright tests driven against the full Aspire stack
 /// (GraphHopper + waymarked-api + waymarked-web).
 ///
-/// The <see cref="AspireFixture"/> boots the AppHost once per test-class run;
-/// each test gets a fresh browser page.
+/// The <see cref="AspireFixture"/> boots the AppHost once for the entire
+/// "Aspire" collection; each test gets a fresh browser page.
 /// </summary>
-public class RouteJourneyTests : IClassFixture<AspireFixture>
+[Collection("Aspire")]
+public class RouteJourneyTests
 {
     private readonly AspireFixture _fixture;
 
