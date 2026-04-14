@@ -2,7 +2,8 @@ var builder = DistributedApplication.CreateBuilder(args);
 
 builder.AddDockerComposeEnvironment("env");
 
-var postgres = builder.AddPostgres("db");
+var postgres = builder.AddPostgres("db")
+    .WithDataVolume("waymarked-postgres-data");
 var db = postgres.AddDatabase("waymarked");
 
 // In CI, use the pre-built image (graph already on disk) to avoid a 5-min rebuild.
