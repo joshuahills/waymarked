@@ -32,7 +32,7 @@ graphhopper
 var api = builder.AddProject<Projects.Waymarked_Api>("waymarked-api", launchProfileName: "https")
     .WithReference(graphhopper.GetEndpoint("http"))
     .WithReference(db)
-    .WithHttpsHealthCheck("/health", endpointName: "https")
+    .WithHttpHealthCheck("/health", endpointName: "https")
     .WaitFor(graphhopper)
     .WaitFor(db)
     .WithEnvironment("GRAPHHOPPER__ELEVATIONENABLED", string.IsNullOrEmpty(prebuiltImage) ? "true" : "false");
