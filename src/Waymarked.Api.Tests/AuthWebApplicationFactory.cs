@@ -1,6 +1,7 @@
 namespace Waymarked.Api.Tests;
 
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -59,6 +60,14 @@ public class AuthWebApplicationFactory : WebApplicationFactory<Program>
             {
                 options.Lockout.AllowedForNewUsers = false;
                 options.Lockout.MaxFailedAccessAttempts = int.MaxValue;
+            });
+
+            // Test clients use http://localhost — secure-only cookies won't be sent.
+            // Override to None so the CookieContainer propagates the auth cookie between requests.
+            services.ConfigureApplicationCookie(options =>
+            {
+                options.Cookie.SecurePolicy = CookieSecurePolicy.None;
+                options.Cookie.SameSite = SameSiteMode.Lax;
             });
         });
 

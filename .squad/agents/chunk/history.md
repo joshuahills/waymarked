@@ -124,3 +124,28 @@ _(none yet — project just started)_
 - Rate limiting disabled in test environment via configuration
 
 **Total test count post-hardening:** 41 routing unit + 40 API integration (33 existing auth + 7 new hardening) + 17 E2E = 98 active (+ 5 auth API skipped)
+
+### Auth Cookie Fix — Secure Flag vs HTTP Test Client (May 2026)
+
+**Problem:** Three integration tests were failing with 401 on `/api/auth/me` after a successful login:
+- `FullFlow_Register_Login_Me_Succeeds`
+- `Me_Authenticated_Returns200WithEmail`
+- `Logout_ClearsSession_MeReturns401Afterwards`
+
+**Root cause:** `Program.cs` configures `CookieSecurePolicy.Always`, which sets the `Secure` flag on auth cookies. The `WebApplicationFactory` test client uses in-memory HTTP transport (`http://localhost`). The `CookieContainer` won't send `Secure`-flagged cookies to non-HTTPS URLs — so the auth cookie received on login was silently dropped on subsequent requests.
+
+**Fix applied:** Added `ConfigureApplicationCookie` override in `AuthWebApplicationFactory.ConfigureTestServices`:
+```csharp
+services.ConfigureApplicationCookie(options =>
+{
+    options.Cookie.SecurePolicy = CookieSecurePolicy.None;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+});
+```
+Also required adding `using Microsoft.AspNetCore.Http;` for `CookieSecurePolicy` and `SameSiteMode`.
+
+**Why it works:** Setting `SecurePolicy = None` removes the `Secure` flag from the test cookie, so the `CookieContainer` willingly sends it to `http://localhost`. `SameSite = Lax` (down from `Strict`) prevents some test client scenarios where strict same-site policy drops the cookie too.
+
+**Alternative considered:** Setting `WebApplicationFactoryClientOptions.BaseAddress = new Uri("https://localhost")` to make the test client use HTTPS — which would let the `CookieContainer` accept `Secure` cookies. Rejected in favour of the cookie policy override, which keeps the fix contained within the factory and avoids any TLS configuration concerns.
+
+**Result:** All 43 tests pass (0 failures, 0 regressions).
