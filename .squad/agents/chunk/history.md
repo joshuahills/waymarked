@@ -82,3 +82,29 @@ _(none yet — project just started)_
 - `CreateRawClient()` (HandleCookies=false) — Set-Cookie headers visible; use when asserting cookie presence/flags (HttpOnly)
 
 **Total test count post-commit:** 41 routing unit + 33 API integration (13 new auth) = 74 active; 5 auth tests skipped pending Brand fixes
+
+### Auth E2E Journey Tests (April 2026)
+
+**Context:** Added `AuthJourneyTests.cs` — 17 Playwright E2E tests covering the full auth UI against the real Aspire stack (PostgreSQL, API, web frontend).
+
+**File:** `C:\Projects\waymarked\src\Waymarked.E2E.Tests\AuthJourneyTests.cs`
+
+**Coverage:**
+- Registration flow: modal opens on `#signInBtn` click; panel switches; submit disabled until pw requirements met; happy path registers and closes modal; duplicate email shows error
+- Login flow: happy path; wrong password shows `#loginError.visible`; session persists across page reload
+- Logout: `#signOutBtn` hides `#userInfo` and reveals `#signInBtn`
+- Forgot password: panel navigation; always shows `#forgotSuccess` (anti-enumeration); `#forgotSubmit` disabled after submit
+- Password reset: auto-opens modal from `?resetToken=&email=` URL params; submit disabled until valid password; invalid token shows `#resetError.visible`
+- Modal UX: closes on Escape key; closes on `.auth-modal-overlay` click
+
+**Patterns established:**
+- All 17 tests are independent — each registers its own user via `RegisterViaUiAsync()` helper where needed (no direct API calls in E2E tests)
+- Private helpers: `OpenAuthModalAsync`, `SwitchToRegisterAsync`, `RegisterViaUiAsync`, `SignOutAsync` — keeps test bodies focused and readable
+- Uses `WaitForSelectorAsync("#element:not([hidden])")` and `WaitForFunctionAsync` for button enable/disable detection — avoids `Task.Delay`
+- Playwright's `IsHiddenAsync()` / `IsVisibleAsync()` correctly handles the `hidden` HTML attribute used on auth modal elements
+- `TestPassword = "ValidPass1!"` satisfies all ASP.NET Core Identity defaults (uppercase, lowercase, digit, non-alphanumeric, length ≥6)
+- Unique emails via `$"e2e-{Guid.NewGuid():N}@waymarked.test"` (consistent with integration test pattern)
+
+**File lock pattern (confirmed again):** Must stop `Waymarked.AppHost`, `Waymarked.Api`, and `Waymarked.Web` processes before building the E2E project. All have file locks on shared DLLs during normal Aspire operation.
+
+**Total test count post-commit:** 41 routing unit + 33 API integration + 17 auth E2E = 91 active (+ 5 auth API skipped)

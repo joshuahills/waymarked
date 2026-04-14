@@ -2,6 +2,71 @@
 
 ---
 
+## 2026-04-14: Auth E2E Test Strategy
+
+**Author:** Chunk  
+**Date:** April 2026  
+**Status:** Proposed
+
+### Context
+
+Auth UI lives in `auth.js` and `index.html`. Full auth API is already covered by `AuthEndpointTests.cs` (lower-level integration tests). We needed Playwright E2E tests that exercise the real browser → API → DB path for auth journeys.
+
+### Decisions Made
+
+#### 1. All E2E auth tests register via UI, not direct API calls
+
+Every test that needs a pre-existing user calls `RegisterViaUiAsync()` (UI flow) rather than hitting the API directly. This ensures the full stack is exercised end-to-end — including the JS event wiring, password requirements checklist, and modal close-on-success behaviour.
+
+**Implication:** Tests are slightly slower (each registration is a full UI flow) but test more of the surface area.
+
+#### 2. Each test is fully independent — no shared user state
+
+Each test creates its own unique user with `Guid.NewGuid()` emails. No shared fixture state for auth users. Consistent with the integration test pattern in `AuthEndpointTests.cs`.
+
+**Implication:** Tests can run in any order (including parallel if parallelism is enabled) without conflicts.
+
+#### 3. No `Task.Delay` — use Playwright waits only
+
+All waiting is done via `WaitForSelectorAsync` (with CSS-not-hidden selectors like `:not([hidden])`) or `WaitForFunctionAsync` (for button enable state). No fixed delays.
+
+**Exception:** The existing `RouteJourneyTests` uses one `Task.Delay(3s)` for reverse-geocode. Auth tests do not need this pattern.
+
+#### 4. `TestPassword = "ValidPass1!"` is the standard E2E test password
+
+Meets all ASP.NET Core Identity defaults. Consistent with `AuthEndpointTests.cs` (`"ValidPass1!"`).
+
+#### 5. Password reset happy path is NOT tested
+
+A real reset happy path requires a valid SMTP token, which requires smtp4dev integration in the test fixture (smtp4dev is only started in non-publish mode). Testing with an invalid token (`test 15: ResetPassword_InvalidToken_ShowsError`) is sufficient to verify the reset form wiring. A true happy path can be added when smtp4dev is wired into the test fixture.
+
+**Gap documented:** True reset happy path test is not possible without smtp4dev access from the E2E fixture.
+
+---
+
+## 2026-04-14: Auth Implementation Review — Mikey (Lead)
+
+**Date:** 2026-04-14  
+**Verdict:** ✅ **APPROVED WITH NOTES**
+
+### Summary
+
+The auth implementation is **solid for MVP phase**. Security fundamentals are correctly implemented — cookie flags, API 401 vs redirect behaviour, anti-enumeration on forgot-password, URL-encoded tokens, no hardcoded secrets. The code is clean, well-organised, and has good test coverage for core flows.
+
+However, several items need attention before production readiness.
+
+### Pre-Production Items Required
+
+1. Enable account lockout mechanism
+2. Implement explicit token lifespan configuration
+3. Add rate limiting on forgot-password endpoint
+
+### Status
+
+Ready for staging review upon implementation of pre-production items.
+
+---
+
 ## 2026-04-14: Auth Cookie Fix — Register Sign-In + SecurePolicy
 
 **Date:** 2026-04-14  

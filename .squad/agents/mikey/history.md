@@ -72,3 +72,44 @@ _(none yet — project just started)_
 - Spike: Deploy Valhalla with UK extract, test pedestrian routing + custom costing
 - Spike: Test "avoid roads", "prefer scenic", elevation-based routing
 - Decision: If OSM insufficient, evaluate contributing to OSM vs. hybrid OS MasterMap approach
+
+### 2026-04-13: Auth Implementation Code Review
+
+**Files Reviewed:**
+- `src/Waymarked.Api/AuthEndpoints.cs` — registration, login, logout, /me, forgot-password, reset-password
+- `src/Waymarked.Api/Email/SmtpEmailSender.cs` — MailKit-based email sender
+- `src/Waymarked.Api/Email/SmtpSettings.cs` — SMTP configuration POCO
+- `src/Waymarked.Api/Program.cs` — Identity and cookie configuration
+- `src/Waymarked.Api.Tests/AuthEndpointTests.cs` — integration tests (register, login, logout, /me)
+- `src/Waymarked.E2E.Tests/AuthJourneyTests.cs` — Playwright E2E tests covering full auth UI flows
+
+**Security Findings:**
+
+✅ **Done Well:**
+- Cookie security correctly configured: HttpOnly=true, SameSite=Strict, SecurePolicy=Always
+- `/api/auth/me` returns 401 (not redirect) for unauthenticated requests — correct API behaviour
+- Password reset endpoint uses constant-time response (always 200) to prevent email enumeration
+- Password reset tokens are URL-encoded via `HttpUtility.UrlEncode()`
+- SMTP credentials loaded from configuration (not hardcoded)
+- ASP.NET Core Identity defaults used for password complexity
+
+⚠️ **Concerns:**
+1. **lockoutOnFailure: false** — No brute-force protection on login. Intentional for MVP, but needs addressing before production.
+2. **No CSRF protection** — State-mutating POST endpoints (login, logout, register) use cookie auth but no anti-forgery tokens. SameSite=Strict mitigates most CSRF in modern browsers, but older browsers vulnerable.
+3. **Token lifespan not explicitly configured** — Password reset tokens default to 1 day, but this should be made explicit and documented.
+4. **No rate limiting** — Forgot-password endpoint could be abused for email spam.
+
+**Maintainability Findings:**
+
+✅ **Done Well:**
+- Endpoint organisation is clean and cohesive
+- Error responses use consistent `{ errors: string[] }` shape
+- Request records are minimal and appropriate
+- Separation between endpoint logic and email infrastructure is good
+- Test coverage for core flows is solid (28+ integration tests, 17+ E2E tests)
+
+⚠️ **Concerns:**
+1. **Missing API-level tests for password reset endpoints** — Only E2E tests cover forgot/reset flows; no direct HTTP integration tests.
+2. **Email template strings inline** — HTML templates embedded in SmtpEmailSender; extract for maintainability when design stabilises.
+
+**Verdict: APPROVED WITH NOTES** — Implementation is solid for MVP phase. Security fundamentals correct. Pre-production requires: lockout policy, explicit token lifespan, and rate limiting.
