@@ -113,3 +113,29 @@ _(none yet — project just started)_
 2. **Email template strings inline** — HTML templates embedded in SmtpEmailSender; extract for maintainability when design stabilises.
 
 **Verdict: APPROVED WITH NOTES** — Implementation is solid for MVP phase. Security fundamentals correct. Pre-production requires: lockout policy, explicit token lifespan, and rate limiting.
+
+### 2026-04-14: Full Codebase Code Quality Review
+
+**Status:** COMPLETED
+
+**Scope:** All backend C#, test, and frontend JS/HTML files.
+
+**Critical Bug Found:**
+- `updateFieldStates()` is called 7 times in `geocoder.js` but never defined anywhere — runtime ReferenceError on any marker/search interaction. (Mouth fixed this.)
+
+**Architecture Observations:**
+- Email infrastructure is clean. `SendConfirmationLinkAsync` and `SendPasswordResetCodeAsync` are interface-required (`IEmailSender<T>`) but never called by app code. Correct and harmless.
+- Export endpoints in `Program.cs` (GPX/KML/GeoJSON) duplicate the validate→build→execute pipeline. DRY violation — extract shared `GetRouteOrError()` method.
+- Frontend uses global `window.map` / `window.tileLayer` for cross-file communication. Acceptable for vanilla JS architecture, would need rethinking if modules are adopted.
+
+**Template Boilerplate to Clean (Brand completed):**
+- `Program.cs:15` — `// Add services to the container.`
+- `Program.cs:78` — `// Learn more about configuring OpenAPI...`
+- `AuthWebApplicationFactory.cs` — 4x `// No-op for tests.` comments on self-evident empty methods.
+
+**What's Good:**
+- Auth test structure is excellent — clear naming, good coverage, useful doc comments.
+- Frontend JS is well-organised for vanilla architecture — IIFEs, debounce, clean event wiring.
+- Security comments (anti-enumeration rationale, etc.) are valuable and should stay.
+
+**Decision:** Written to `.squad/decisions/inbox/mikey-code-quality-review-20260414.md`

@@ -466,6 +466,97 @@ Items 1 → 2 → 3 are a dependency chain. Auth must land before save, save bef
 
 ---
 
+### 2026-04-14: Code Quality Review — Full Codebase
+
+**Status:** COMPLETED | **Owner:** Mikey (Lead) | **Reviewer:** claude-opus-4.6
+
+#### Finding: updateFieldStates() undefined — Critical bug in frontend
+
+**Problem:**
+`geocoder.js` calls `updateFieldStates()` in 7 places (lines 47, 50, 57, 82, 85, 93, 156) but this function is never defined anywhere in the codebase. This causes `ReferenceError: updateFieldStates is not defined` at runtime whenever:
+- A start/end point is set or cleared
+- A marker is dragged
+- A search input is edited
+
+**Resolution:**
+Mouth (Frontend) removed all 7 dead calls to `updateFieldStates()` in geocoder.js. The function was deleted during the Route Type Toggle rewrite but the callers were never cleaned up. These were silent ReferenceErrors in event handlers — now eliminated.
+- **Commit:** af77b47 (comment cleanup + bug fix)
+- **Status:** RESOLVED ✅
+
+---
+
+### 2026-04-14: Export Endpoint DRY Violation — Backend Refactoring Opportunity
+
+**Status:** IDENTIFIED (not yet implemented) | **Owner:** Brand (Backend Dev) | **Priority:** Medium
+
+#### Finding: Duplicate validate→build→execute pipeline across export endpoints
+
+**Problem:**
+Three export endpoints (`/api/routes/export/gpx`, `/api/routes/export/kml`, `/api/routes/export/geojson`) in `Program.cs:114-176` repeat the exact same validation → build → execute pipeline as `/api/routes`. Only the final serialisation differs.
+
+**Solution Recommendation:**
+Extract a single `GetRouteOrError()` helper method that returns the `WaymarkedRouteResponse` or an `IResult` error. Each endpoint would then just call that + format-specific serialization.
+
+**Rationale:**
+- Reduces maintenance burden — validation or routing logic changes only need to be updated in one place
+- Prevents bugs from inconsistent validation across endpoints
+- Not urgent but will cause maintenance issues when validation logic evolves
+
+**Status:** Deferred; helpers at lines 200-299 already partially mitigate this.
+
+---
+
+### 2026-04-14: Auth Hardening — Lockout, Token Lifespan, Rate Limiting
+
+**Status:** IMPLEMENTED | **Owner:** Brand (Backend Dev) | **Date:** 2026-04-15
+
+#### Decision: Pre-production security hardening for auth system
+
+**Implemented Changes:**
+
+**1. Account Lockout on Failed Login Attempts**
+- Configuration: 5 failed attempts → 15 minute lockout
+- Settings:
+  - `MaxFailedAccessAttempts = 5`
+  - `DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15)`
+  - `AllowedForNewUsers = true`
+  - `lockoutOnFailure: true` in PasswordSignInAsync
+
+**2. Password Reset Token Lifespan**
+- Configuration: 24-hour token expiry
+- Location: `Program.cs` (Configure<DataProtectionTokenProviderOptions>)
+- Setting: `TokenLifespan = TimeSpan.FromHours(24)`
+
+**3. Rate Limiting on Forgot-Password Endpoint**
+- Policy: Fixed-window rate limiter (3 requests per 15 minutes)
+- Behavior: Returns HTTP 429 (Too Many Requests) when limit exceeded
+- Disabled in Test environment to prevent cross-test interference
+
+**4. Integration Tests for Password Reset Flow**
+- 7 new integration tests added
+  - Forgot-password (4 tests): known email, unknown email, empty email, null body — all return 200 for anti-enumeration
+  - Reset-password (3 tests): invalid token, missing fields, unknown email — all return 400
+- Test Infrastructure: FakeEmailSender stubs SMTP in tests
+
+**Files Modified:**
+- `src/Waymarked.Api/Program.cs` — lockout, token, rate limiting configuration
+- `src/Waymarked.Api/AuthEndpoints.cs` — lockoutOnFailure: true, RequireRateLimiting
+- `src/Waymarked.Api.Tests/AuthEndpointTests.cs` — 7 new tests
+- `src/Waymarked.Api.Tests/AuthWebApplicationFactory.cs` — FakeEmailSender
+
+**Test Results:**
+- Total: 45 tests (38 pre-existing + 7 new)
+- Passing: 42 (35 pre-existing + 7 new)
+- Failing: 3 (pre-existing, unrelated)
+- All 7 new tests passing ✅
+
+**Trade-offs:**
+- **Lockout:** 5 attempts, 15 minutes balances security vs. UX
+- **Rate Limiting:** 3 requests per 15 minutes allows 1-2 legitimate retries, blocks enumeration
+- **Token Lifespan:** 24 hours — standard industry practice
+
+---
+
 ## Governance
 
 - All meaningful changes require team consensus

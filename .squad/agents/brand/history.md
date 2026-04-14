@@ -422,3 +422,18 @@ No bugs found. Conversion (km/miles → metres) and validation (500m–100km) we
 
 **Build result:** Compiled successfully. Tests: 45 total, 42 passed, 3 failed (pre-existing, unrelated to email).
 
+### Code Quality Review Findings + Cleanup (2026-04-14)
+
+**Status:** COMPLETED
+
+**Findings from Mikey's full codebase review:**
+- Email infrastructure is clean. `SendConfirmationLinkAsync` and `SendPasswordResetCodeAsync` are interface-required but never called by app code. Correct and harmless.
+- Export endpoints duplicate the validate→build→execute pipeline (DRY violation). Not urgent but will bite when adding new formats.
+
+**Comment cleanup applied:**
+- Removed `// Add services to the container.` (Program.cs, boilerplate)
+- Removed `// Learn more about configuring OpenAPI...` (Program.cs, boilerplate)
+- Kept all security comments and WHY-based explanations
+
+**Status:** Brand completed email stub honest-ops and verbose comment removal across Program.cs, AuthWebApplicationFactory.cs, AuthEndpointTests.cs
+

@@ -278,5 +278,30 @@ Added a live password requirements checklist to the register form, plus submit b
 - At least one number (0–9)
 - At least one non-alphanumeric (special) character
 
+### Code Quality Review Findings + Frontend Cleanup (2026-04-14)
+
+**Status:** COMPLETED
+
+**Mikey's code quality review findings:**
+- **🐛 CRITICAL BUG:** `updateFieldStates()` called 7 times in geocoder.js but never defined
+- Function was deleted during Route Type Toggle rewrite but callers remained as silent ReferenceErrors
+
+**Fix applied:**
+- Removed all 7 dead calls to `updateFieldStates()` in geocoder.js (lines 47, 50, 57, 82, 85, 93, 156)
+  - setStartPoint (line 47)
+  - clearStartPoint (line 50)
+  - setEndPoint (line 57)
+  - clearEndPoint (line ?)
+  - dragend marker handler (lines 82, 85, 93)
+  - setupSearch input handler (line 156)
+
+**Comment cleanup pass:**
+- Removed: 103 lines of verbose/restating comments across 10 frontend files
+- Added: 13 lines of essential comments (security rationale, dark mode WHY, design intent)
+- Kept: FOUC prevention, Nominatim timing explanation, route colour rationale, security intent comments
+- Pattern enforced: Remove section banners, restatement comments, redundant HTML comments; keep WHY-based explanations
+
+**Commit:** af77b47 (comment cleanup + dead call removal)
+**Result:** Runtime crash bugs eliminated; code health improved.
 
 
