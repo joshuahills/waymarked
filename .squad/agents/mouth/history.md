@@ -30,9 +30,32 @@ _(none yet — project just started)_
 
 ## Recent Work
 
-### Password Requirements Checklist — Register Form (2026-04-14)
+### Comment Cleanup + Code Quality Pass (2026-04-15)
 
 **Status:** IMPLEMENTED
+**Commit:** af77b47
+
+Stripped verbose/restating comments across all frontend files. Applied high editorial standards.
+
+**What was removed:**
+- All section banner dividers (`// ── ...`) from every JS file — they added noise without value in short focused files
+- Restating comments (`// Validate start point`, `// Pan/zoom to user location`, `// Show login form with a success hint`, etc.)
+- Redundant HTML comments (`<!-- Login form -->`, `<!-- Auth modal -->`, `<!-- Map-click mode toggle -->`, etc.)
+- Orphaned/stacked CSS section banners (Map-click mode banner had no styles beneath it)
+- `/* Custom select arrow */`, `/* Error banner */`, `/* Crosshair cursor on map... */` CSS comments that restate selectors
+
+**What was kept:**
+- FOUC prevention comment in theme.js and index.html `<head>`
+- Nominatim mousedown/blur timing explanation in geocoder.js
+- Magenta route colour rationale in route.js (hue gap explanation)
+- `// Always show success regardless of whether the email exists` in forgot-password (security intent)
+- `/* best-effort — clear UI regardless */` in sign-out
+- URL token cleanup comment in initPasswordReset
+- Dark mode WHY comments tightened but retained
+
+**Quality fix:** Removed 7 dead calls to `updateFieldStates()` in geocoder.js. The function was deleted from route.js during the Route Type Toggle rewrite but the callers in geocoder.js (setStartPoint, clearStartPoint, setEndPoint, clearEndPoint dragend, setupSearch input handler) were never cleaned up. These were silent ReferenceErrors in event handlers.
+
+
 
 Added a live password requirements checklist to the register form, plus submit button gating.
 
@@ -222,6 +245,8 @@ Built the frontend auth UI against ASP.NET Core Identity backend. Cookie auth �
 - **Cookie auth simplicity:** With HttpOnly cookies + YARP, the frontend auth module is just UI state — no token storage, no refresh logic. `fetch(..., { credentials: 'same-origin' })` is all that's needed.
 - **Sign-out best-effort pattern:** Always update UI after sign-out regardless of whether the API call succeeds. Users expect the UI to reflect their intent, not the network.
 - **Modal `hidden` attribute:** Prefer `hidden` attribute + `[hidden] { display: none }` CSS over toggling `display` directly — more semantic, works with forms for reset state.
+- **`display: flex` beats `[hidden]`:** Any element with an explicit `display` CSS rule will override the browser's built-in `[hidden] { display: none }`. Always add `[selector][hidden] { display: none; }` alongside any flex/grid container that is also toggled via the `hidden` attribute.
+- **Clear text on hide:** When hiding a container that holds user data (e.g. an email span), always clear the text content too — hiding the wrapper alone leaves stale data in the DOM that can flash if the element becomes visible again.
 
 
 ---
