@@ -29,21 +29,6 @@ graphhopper
     .WithHttpHealthCheck("/info", endpointName: "http")
     .WithEnvironment("JAVA_OPTS", string.IsNullOrEmpty(prebuiltImage) ? "-Xmx6g -Xms512m" : "-Xmx2g -Xms256m");
 
-var otelCollector = builder.AddContainer("otel-collector", "otel/opentelemetry-collector-contrib", "0.100.0")
-    .WithBindMount("../../infra/otel-collector/config.yaml", "/etc/otelcol-contrib/config.yaml", isReadOnly: true)
-    .WithEndpoint(targetPort: 4317, name: "grpc")
-    .WithEndpoint(targetPort: 4318, name: "http");
-
-builder.AddContainer("loki", "grafana/loki", "2.9.10")
-    .WithArgs("-config.file=/etc/loki/config.yaml")
-    .WithBindMount("../../infra/loki/config.yaml", "/etc/loki/config.yaml", isReadOnly: true)
-    .WithHttpEndpoint(targetPort: 3100, name: "http");
-
-builder.AddContainer("tempo", "grafana/tempo", "2.4.1")
-    .WithArgs("-config.file=/etc/tempo/config.yaml")
-    .WithBindMount("../../infra/tempo/config.yaml", "/etc/tempo/config.yaml", isReadOnly: true)
-    .WithHttpEndpoint(targetPort: 3200, name: "http");
-
 // CI config-ci.yml builds the graph without elevation; disable elevation requests to match.
 var api = builder.AddProject<Projects.Waymarked_Api>("waymarked-api", launchProfileName: "https")
     .WithReference(graphhopper.GetEndpoint("http"))
@@ -51,13 +36,11 @@ var api = builder.AddProject<Projects.Waymarked_Api>("waymarked-api", launchProf
     .WithHttpHealthCheck("/health", endpointName: "http")
     .WaitFor(graphhopper)
     .WaitFor(db)
-    .WithEnvironment("GRAPHHOPPER__ELEVATIONENABLED", string.IsNullOrEmpty(prebuiltImage) ? "true" : "false")
-    .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", otelCollector.GetEndpoint("http"));
+    .WithEnvironment("GRAPHHOPPER__ELEVATIONENABLED", string.IsNullOrEmpty(prebuiltImage) ? "true" : "false");
 
 var web = builder.AddProject<Projects.Waymarked_Web>("waymarked-web", launchProfileName: "https")
     .WithReference(api)
-    .WaitFor(api)
-    .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", otelCollector.GetEndpoint("http"));
+    .WaitFor(api);
 
 // smtp4dev — local SMTP sink with a web UI for inspecting emails during development
 if (!builder.ExecutionContext.IsPublishMode)
