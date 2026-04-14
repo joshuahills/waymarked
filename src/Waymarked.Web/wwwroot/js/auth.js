@@ -124,6 +124,7 @@
     }
 
     function setLoggedOut() {
+        userEmailEl.textContent = '';
         userInfo.setAttribute('hidden', '');
         signInBtn.removeAttribute('hidden');
     }
