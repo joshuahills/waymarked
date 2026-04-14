@@ -10,7 +10,7 @@ function updateProfileDescription() {
 profileSelect.addEventListener('change', updateProfileDescription);
 updateProfileDescription();
 
-let lastRouteRequest = null;
+let lastRouteData = null;
 
 const roundTripBtn       = document.getElementById('routeTypeRoundTrip');
 const pointToPointBtn    = document.getElementById('routeTypePtoP');
@@ -138,7 +138,7 @@ form.addEventListener('submit', async e => {
     planButton.disabled    = true;
     planButton.textContent = 'Planning…';
 
-    lastRouteRequest = payload;
+    lastRouteData = null; // clear stale data while planning
 
     try {
         const response = await fetch('/api/routes', {
@@ -157,6 +157,8 @@ form.addEventListener('submit', async e => {
         if (!data.points || !data.points.coordinates) {
             throw new Error('No route found');
         }
+
+        lastRouteData = data;
 
         // GeoJSON coordinates are [lon, lat] — swap to [lat, lon] for Leaflet
         const coordinates = data.points.coordinates.map(coord => [coord[1], coord[0]]);
@@ -198,7 +200,7 @@ form.addEventListener('submit', async e => {
 });
 
 async function exportRoute(format, btn) {
-    if (!lastRouteRequest) return;
+    if (!lastRouteData) return;
 
     const originalText = btn.textContent;
     btn.disabled = true;
@@ -208,7 +210,7 @@ async function exportRoute(format, btn) {
         const res = await fetch(`/api/routes/export/${format}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(lastRouteRequest)
+            body: JSON.stringify(lastRouteData)
         });
 
         if (!res.ok) throw new Error(`Export failed: ${res.status}`);

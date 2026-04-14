@@ -120,50 +120,28 @@ app.MapPost("/api/routes", async (ApiRouteRequest apiRequest, GraphHopperClient 
 .WithOpenApi();
 
 // ─── Export endpoints ────────────────────────────────────────────────────────
+// Accept the already-computed route response so no routing engine call is made.
+// The client sends back the exact response it received from POST /api/routes.
 
-app.MapPost("/api/routes/export/gpx", async (ApiRouteRequest apiRequest, GraphHopperClient client) =>
+app.MapPost("/api/routes/export/gpx", (WaymarkedRouteResponse route) =>
 {
-    var validationResult = ValidateRouteRequest(apiRequest, out var distanceInMetres);
-    if (validationResult != null) return validationResult;
-
-    var request = BuildRouteRequest(apiRequest, distanceInMetres, elevationEnabled);
-    var routeResult = await ExecuteRouteAsync(client, request, apiRequest.To == null);
-    if (routeResult.Error != null) return routeResult.Error;
-
-    var gpx = RouteExporter.BuildGpx(routeResult.Route!);
-    var bytes = Encoding.UTF8.GetBytes(gpx);
+    var bytes = Encoding.UTF8.GetBytes(RouteExporter.BuildGpx(route));
     return Results.File(bytes, "application/gpx+xml", "waymarked-route.gpx");
 })
 .WithName("ExportGpx")
 .WithOpenApi();
 
-app.MapPost("/api/routes/export/kml", async (ApiRouteRequest apiRequest, GraphHopperClient client) =>
+app.MapPost("/api/routes/export/kml", (WaymarkedRouteResponse route) =>
 {
-    var validationResult = ValidateRouteRequest(apiRequest, out var distanceInMetres);
-    if (validationResult != null) return validationResult;
-
-    var request = BuildRouteRequest(apiRequest, distanceInMetres, elevationEnabled);
-    var routeResult = await ExecuteRouteAsync(client, request, apiRequest.To == null);
-    if (routeResult.Error != null) return routeResult.Error;
-
-    var kml = RouteExporter.BuildKml(routeResult.Route!);
-    var bytes = Encoding.UTF8.GetBytes(kml);
+    var bytes = Encoding.UTF8.GetBytes(RouteExporter.BuildKml(route));
     return Results.File(bytes, "application/vnd.google-earth.kml+xml", "waymarked-route.kml");
 })
 .WithName("ExportKml")
 .WithOpenApi();
 
-app.MapPost("/api/routes/export/geojson", async (ApiRouteRequest apiRequest, GraphHopperClient client) =>
+app.MapPost("/api/routes/export/geojson", (WaymarkedRouteResponse route) =>
 {
-    var validationResult = ValidateRouteRequest(apiRequest, out var distanceInMetres);
-    if (validationResult != null) return validationResult;
-
-    var request = BuildRouteRequest(apiRequest, distanceInMetres, elevationEnabled);
-    var routeResult = await ExecuteRouteAsync(client, request, apiRequest.To == null);
-    if (routeResult.Error != null) return routeResult.Error;
-
-    var geoJson = RouteExporter.BuildGeoJson(routeResult.Route!);
-    var bytes = Encoding.UTF8.GetBytes(geoJson);
+    var bytes = Encoding.UTF8.GetBytes(RouteExporter.BuildGeoJson(route));
     return Results.File(bytes, "application/geo+json", "waymarked-route.geojson");
 })
 .WithName("ExportGeoJson")

@@ -184,15 +184,7 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
     [Fact]
     public async Task Post_ExportGpx_Returns200WithGpxContentType()
     {
-        var payload = new
-        {
-            from = new[] { 54.5994, -3.1367 },
-            distance = 5.0,
-            distanceUnit = "kilometres",
-            profile = "foot"
-        };
-
-        var response = await _client.PostAsJsonAsync("/api/routes/export/gpx", payload);
+        var response = await _client.PostAsJsonAsync("/api/routes/export/gpx", SampleRouteResponse());
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Content.Headers.ContentType!.MediaType.Should().Contain("gpx");
@@ -201,15 +193,7 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
     [Fact]
     public async Task Post_ExportKml_Returns200WithKmlContentType()
     {
-        var payload = new
-        {
-            from = new[] { 54.5994, -3.1367 },
-            distance = 5.0,
-            distanceUnit = "kilometres",
-            profile = "foot"
-        };
-
-        var response = await _client.PostAsJsonAsync("/api/routes/export/kml", payload);
+        var response = await _client.PostAsJsonAsync("/api/routes/export/kml", SampleRouteResponse());
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Content.Headers.ContentType!.MediaType.Should().Contain("kml");
@@ -218,15 +202,7 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
     [Fact]
     public async Task Post_ExportGeoJson_Returns200WithGeoJsonContentType()
     {
-        var payload = new
-        {
-            from = new[] { 54.5994, -3.1367 },
-            distance = 5.0,
-            distanceUnit = "kilometres",
-            profile = "foot"
-        };
-
-        var response = await _client.PostAsJsonAsync("/api/routes/export/geojson", payload);
+        var response = await _client.PostAsJsonAsync("/api/routes/export/geojson", SampleRouteResponse());
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Content.Headers.ContentType!.MediaType.Should().Contain("geo+json");
@@ -239,15 +215,7 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
     [Fact]
     public async Task Post_ExportGpx_ContainsValidGpxStructure()
     {
-        var payload = new
-        {
-            from = new[] { 54.5994, -3.1367 },
-            distance = 5.0,
-            distanceUnit = "kilometres",
-            profile = "foot"
-        };
-
-        var response = await _client.PostAsJsonAsync("/api/routes/export/gpx", payload);
+        var response = await _client.PostAsJsonAsync("/api/routes/export/gpx", SampleRouteResponse());
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var body = await response.Content.ReadAsStringAsync();
@@ -262,15 +230,7 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
     [Fact]
     public async Task Post_ExportKml_ContainsValidKmlStructure()
     {
-        var payload = new
-        {
-            from = new[] { 54.5994, -3.1367 },
-            distance = 5.0,
-            distanceUnit = "kilometres",
-            profile = "foot"
-        };
-
-        var response = await _client.PostAsJsonAsync("/api/routes/export/kml", payload);
+        var response = await _client.PostAsJsonAsync("/api/routes/export/kml", SampleRouteResponse());
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var body = await response.Content.ReadAsStringAsync();
@@ -283,20 +243,11 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
     [Fact]
     public async Task Post_ExportGeoJson_ContainsValidGeoJsonStructure()
     {
-        var payload = new
-        {
-            from = new[] { 54.5994, -3.1367 },
-            distance = 5.0,
-            distanceUnit = "kilometres",
-            profile = "foot"
-        };
-
-        var response = await _client.PostAsJsonAsync("/api/routes/export/geojson", payload);
+        var response = await _client.PostAsJsonAsync("/api/routes/export/geojson", SampleRouteResponse());
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var body = await response.Content.ReadAsStringAsync();
 
-        // Accept both compact and indented JSON
         body.Should().MatchRegex("\"type\"\\s*:\\s*\"FeatureCollection\"",
             "top-level type must be FeatureCollection");
         body.Should().Contain("\"LineString\"",
@@ -344,7 +295,9 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // Export endpoint validation — same rules apply as /api/routes
+    // Export endpoints accept the pre-computed route — no routing engine called.
+    // The export tests above exercise that the correct format is serialised.
+    // Validation of route inputs belongs to POST /api/routes tests above.
     // ──────────────────────────────────────────────────────────────────────────
 
     [Fact]
@@ -365,39 +318,24 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
             "a custom distanceTolerance parameter should be accepted by the API");
     }
 
-    [Fact]
-    public async Task Post_ExportGpx_FromOutsideGreatBritain_Returns400()
+    private static object SampleRouteResponse() => new
     {
-        // Paris coords (lat=48.8566, lon=2.3522) — outside GB bounds
-        var payload = new
+        distance = 5000.0,
+        distanceKm = 5.0,
+        distanceMiles = 3.11,
+        durationMs = 3600000,
+        durationFormatted = "1h 0m",
+        points = new
         {
-            from = new[] { 48.8566, 2.3522 },
-            distance = 5.0,
-            distanceUnit = "kilometres",
-            profile = "foot"
-        };
-
-        var response = await _client.PostAsJsonAsync("/api/routes/export/gpx", payload);
-
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest,
-            "GPX export must reject coordinates outside Great Britain");
-    }
-
-    [Fact]
-    public async Task Post_ExportGpx_DistanceTooLarge_Returns400()
-    {
-        // 200 km is above the 100 km maximum
-        var payload = new
-        {
-            from = new[] { 54.5994, -3.1367 },
-            distance = 200.0,
-            distanceUnit = "kilometres",
-            profile = "foot"
-        };
-
-        var response = await _client.PostAsJsonAsync("/api/routes/export/gpx", payload);
-
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest,
-            "GPX export must reject distances exceeding 100 km");
-    }
+            type = "LineString",
+            coordinates = new[]
+            {
+                new[] { -3.1367, 54.5994 },
+                new[] { -3.1400, 54.6010 },
+                new[] { -3.1367, 54.5994 }
+            }
+        },
+        instructions = Array.Empty<object>(),
+        isRoundTrip = true
+    };
 }
