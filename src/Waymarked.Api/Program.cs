@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using System.Text;
 using Waymarked.Api;
 using Waymarked.Api.Data;
+using Waymarked.Api.Email;
 using Waymarked.Routing;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -42,6 +43,10 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 builder.Services.AddAuthorization();
+
+// Email
+builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("Email"));
+builder.Services.AddTransient<IEmailSender<ApplicationUser>, SmtpEmailSender>();
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();

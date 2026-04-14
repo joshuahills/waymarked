@@ -1,7 +1,10 @@
 namespace Waymarked.Api;
 
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
+using System.Web;
 using Waymarked.Api.Data;
+using Waymarked.Api.Email;
 
 internal static class AuthEndpoints
 {
@@ -52,8 +55,51 @@ internal static class AuthEndpoints
 
             return Results.Ok(new { email = context.User.Identity.Name });
         }).RequireAuthorization();
+
+        group.MapPost("/forgot-password", async (
+            ForgotPasswordRequest req,
+            UserManager<ApplicationUser> userManager,
+            IEmailSender<ApplicationUser> emailSender,
+            IOptions<SmtpSettings> smtpOptions) =>
+        {
+            // Always return 200 to avoid revealing whether the email is registered.
+            if (!string.IsNullOrEmpty(req.Email))
+            {
+                var user = await userManager.FindByEmailAsync(req.Email);
+                if (user is not null)
+                {
+                    var token = await userManager.GeneratePasswordResetTokenAsync(user);
+                    var baseUrl = smtpOptions.Value.FrontendBaseUrl.TrimEnd('/');
+                    var resetLink = $"{baseUrl}/?resetToken={HttpUtility.UrlEncode(token)}&email={HttpUtility.UrlEncode(req.Email)}";
+                    await emailSender.SendPasswordResetLinkAsync(user, req.Email, resetLink);
+                }
+            }
+
+            return Results.Ok();
+        });
+
+        group.MapPost("/reset-password", async (
+            ResetPasswordRequest req,
+            UserManager<ApplicationUser> userManager) =>
+        {
+            if (string.IsNullOrEmpty(req.Email) || string.IsNullOrEmpty(req.Token) || string.IsNullOrEmpty(req.NewPassword))
+                return Results.BadRequest(new { errors = new[] { "Email, token, and new password are required." } });
+
+            var user = await userManager.FindByEmailAsync(req.Email);
+            if (user is null)
+                return Results.BadRequest(new { errors = new[] { "Password reset failed. The link may have expired." } });
+
+            var result = await userManager.ResetPasswordAsync(user, req.Token, req.NewPassword);
+
+            if (!result.Succeeded)
+                return Results.BadRequest(new { errors = result.Errors.Select(e => e.Description).ToArray() });
+
+            return Results.Ok();
+        });
     }
 }
 
 record RegisterRequest(string Email, string Password);
 record LoginRequest(string Email, string Password);
+record ForgotPasswordRequest(string Email);
+record ResetPasswordRequest(string Email, string Token, string NewPassword);

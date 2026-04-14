@@ -210,6 +210,7 @@
                 <p class="auth-error" id="loginError" role="alert" aria-live="polite"></p>
                 <button type="submit" class="auth-btn-submit">Sign in</button>
                 <p class="auth-switch">No account? <a href="#" id="switchToRegister">Create one</a></p>
+                <p class="auth-switch"><a href="#" id="switchToForgotPassword">Forgot password?</a></p>
             </form>
 
             <!-- Register form -->
@@ -239,6 +240,45 @@
                 <p class="auth-error" id="registerError" role="alert" aria-live="polite"></p>
                 <button type="submit" class="auth-btn-submit">Create account</button>
                 <p class="auth-switch">Already have an account? <a href="#" id="switchToLogin">Sign in</a></p>
+            </form>
+
+            <!-- Forgot password form -->
+            <form id="forgotPasswordForm" class="auth-form" novalidate hidden>
+                <p class="auth-hint">Enter your email address and we'll send you a link to reset your password.</p>
+                <div class="auth-form-group">
+                    <label for="forgotEmail">Email</label>
+                    <input type="email" id="forgotEmail" class="auth-input"
+                           autocomplete="email" placeholder="you@example.com">
+                </div>
+                <p class="auth-error" id="forgotError" role="alert" aria-live="polite"></p>
+                <p class="auth-success" id="forgotSuccess" role="status" aria-live="polite" hidden>
+                    If an account exists for that email, you'll receive a password reset link shortly.
+                </p>
+                <button type="submit" class="auth-btn-submit" id="forgotSubmit">Send reset link</button>
+                <p class="auth-switch"><a href="#" id="switchToLoginFromForgot">Back to sign in</a></p>
+            </form>
+
+            <!-- Reset password form -->
+            <form id="resetPasswordForm" class="auth-form" novalidate hidden>
+                <div class="auth-form-group">
+                    <label for="resetPassword">New password</label>
+                    <input type="password" id="resetPassword" class="auth-input"
+                           autocomplete="new-password" placeholder="Choose a new password">
+                    <ul class="pw-requirements" id="resetPwRequirements" aria-label="Password requirements">
+                        <li class="pw-req" data-req="length">At least 6 characters</li>
+                        <li class="pw-req" data-req="uppercase">At least one uppercase letter (A–Z)</li>
+                        <li class="pw-req" data-req="lowercase">At least one lowercase letter (a–z)</li>
+                        <li class="pw-req" data-req="number">At least one number (0–9)</li>
+                        <li class="pw-req" data-req="special">At least one special character (!@#$%…)</li>
+                    </ul>
+                </div>
+                <div class="auth-form-group">
+                    <label for="resetConfirm">Confirm password</label>
+                    <input type="password" id="resetConfirm" class="auth-input"
+                           autocomplete="new-password" placeholder="Confirm new password">
+                </div>
+                <p class="auth-error" id="resetError" role="alert" aria-live="polite"></p>
+                <button type="submit" class="auth-btn-submit" id="resetSubmit">Reset password</button>
             </form>
         </div>
     </div>
