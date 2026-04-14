@@ -19,12 +19,9 @@ public class SmtpEmailSender(IOptions<SmtpSettings> options, ILogger<SmtpEmailSe
             <p>Your account is all set. Start planning your next adventure.</p>
             """);
 
+    // Interface stub — email confirmation is not used; registration auto-signs in.
     public Task SendConfirmationLinkAsync(ApplicationUser user, string email, string confirmationLink) =>
-        SendAsync(email, "Confirm your Waymarked account",
-            $"""
-            <p>Thanks for signing up to Waymarked!</p>
-            <p><a href="{confirmationLink}">Click here to confirm your email address</a></p>
-            """);
+        Task.CompletedTask;
 
     public Task SendPasswordResetLinkAsync(ApplicationUser user, string email, string resetLink) =>
         SendAsync(email, "Reset your Waymarked password",
@@ -34,11 +31,9 @@ public class SmtpEmailSender(IOptions<SmtpSettings> options, ILogger<SmtpEmailSe
             <p>This link will expire after 24 hours. If you didn't request this, you can safely ignore this email.</p>
             """);
 
+    // Interface stub — code-based password reset is not implemented.
     public Task SendPasswordResetCodeAsync(ApplicationUser user, string email, string resetCode) =>
-        SendAsync(email, "Your Waymarked password reset code",
-            $"""
-            <p>Your password reset code is: <strong>{resetCode}</strong></p>
-            """);
+        Task.CompletedTask;
 
     private async Task SendAsync(string to, string subject, string htmlBody)
     {

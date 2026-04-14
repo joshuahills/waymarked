@@ -71,27 +71,15 @@ public class AuthWebApplicationFactory : WebApplicationFactory<Program>
 /// </summary>
 internal class FakeEmailSender : IEmailSender<ApplicationUser>, IWaymarkedEmailSender
 {
-    public Task SendWelcomeEmailAsync(ApplicationUser user, string email)
-    {
-        // No-op for tests.
-        return Task.CompletedTask;
-    }
+    public Task SendWelcomeEmailAsync(ApplicationUser user, string email) =>
+        Task.CompletedTask;
 
-    public Task SendConfirmationLinkAsync(ApplicationUser user, string email, string confirmationLink)
-    {
-        // No-op for tests.
-        return Task.CompletedTask;
-    }
+    public Task SendConfirmationLinkAsync(ApplicationUser user, string email, string confirmationLink) =>
+        Task.CompletedTask;
 
-    public Task SendPasswordResetLinkAsync(ApplicationUser user, string email, string resetLink)
-    {
-        // No-op for tests.
-        return Task.CompletedTask;
-    }
+    public Task SendPasswordResetLinkAsync(ApplicationUser user, string email, string resetLink) =>
+        Task.CompletedTask;
 
-    public Task SendPasswordResetCodeAsync(ApplicationUser user, string email, string resetCode)
-    {
-        // No-op for tests.
-        return Task.CompletedTask;
-    }
+    public Task SendPasswordResetCodeAsync(ApplicationUser user, string email, string resetCode) =>
+        Task.CompletedTask;
 }

@@ -401,7 +401,6 @@ public class AuthEndpointTests : IClassFixture<AuthWebApplicationFactory>
     {
         var client = CreateClient();
 
-        // Missing token and newPassword.
         var response = await client.PostAsJsonAsync("/api/auth/reset-password", new
         {
             email = UniqueEmail()

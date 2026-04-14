@@ -9,13 +9,10 @@ using Waymarked.Routing;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add service defaults & Aspire client integrations.
 builder.AddServiceDefaults();
 
-// Add services to the container.
 builder.Services.AddProblemDetails();
 
-// Database and Identity
 builder.AddNpgsqlDbContext<WaymarkedDbContext>("waymarked");
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
@@ -70,12 +67,10 @@ if (!builder.Environment.IsEnvironment("Test"))
     });
 }
 
-// Email
 builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("Email"));
 builder.Services.AddTransient<IEmailSender<ApplicationUser>, SmtpEmailSender>();
 builder.Services.AddTransient<IWaymarkedEmailSender, SmtpEmailSender>();
 
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
 // Add GraphHopper client - uses Aspire service discovery (resolves "graphhopper" to the container endpoint)
@@ -94,7 +89,6 @@ using (var scope = app.Services.CreateScope())
     await db.Database.EnsureCreatedAsync();
 }
 
-// Configure the HTTP request pipeline.
 app.UseExceptionHandler();
 
 app.UseAuthentication();
@@ -175,9 +169,7 @@ app.MapPost("/api/routes/export/geojson", async (ApiRouteRequest apiRequest, Gra
 .WithName("ExportGeoJson")
 .WithOpenApi();
 
-// ─────────────────────────────────────────────────────────────────────────────
-
-app.MapGet("/api/bounds", () => Results.Ok(new
+app.MapGet("/api/bounds",() => Results.Ok(new
 {
     minLat = 49.8,
     maxLat = 60.9,
@@ -297,8 +289,6 @@ static async Task<(WaymarkedRouteResponse? Route, IResult? Error)> ExecuteRouteA
         ));
     }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
 
 record ApiRouteRequest(
     double[] From,
