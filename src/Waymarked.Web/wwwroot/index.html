@@ -23,7 +23,6 @@
 </head>
 <body>
     <header>
-        <!-- Minimal winding-path trail icon -->
         <svg class="header-icon" width="24" height="24" viewBox="0 0 24 24" fill="none"
              xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <path d="M3 20 C6 20 6 14 9 14 C12 14 12 18 15 16 C18 14 18 8 21 6"
@@ -55,7 +54,7 @@
         <div class="sidebar">
             <form id="routeForm">
 
-                <!-- Start Point — place search replaces number inputs -->
+                <!-- Start Point -->
                 <div class="form-group">
                     <label for="startSearch">Start Point</label>
                     <div class="search-with-geoloc">
@@ -79,20 +78,18 @@
                             </svg>
                         </button>
                     </div>
-                    <!-- Hidden coords read by the submit handler (unchanged contract) -->
+                    <!-- hidden inputs for route submit handler -->
                     <input type="hidden" id="startLat">
                     <input type="hidden" id="startLon">
                     <p class="geoloc-error" id="geolocError" role="alert" aria-live="polite"></p>
                     <div class="helper-text">e.g. "Keswick", "LA22 9QU", "Scafell Pike"</div>
                 </div>
 
-                <!-- Route Type toggle -->
                 <div class="route-type-toggle" role="group" aria-label="Route type">
                     <button type="button" id="routeTypeRoundTrip" class="route-type-btn active" aria-pressed="true">Round Trip</button>
                     <button type="button" id="routeTypePtoP" class="route-type-btn" aria-pressed="false">Point to Point</button>
                 </div>
 
-                <!-- Round trip: distance field (shown by default) -->
                 <div id="roundTripSection">
                     <div class="form-group">
                         <label for="distance">Distance</label>
@@ -106,7 +103,6 @@
                     </div>
                 </div>
 
-                <!-- Point to point: end location field (hidden by default) -->
                 <div id="pointToPointSection" style="display:none">
                     <div class="form-group">
                         <label for="endSearch">End Point</label>
@@ -116,7 +112,7 @@
                                    autocomplete="off" spellcheck="false">
                             <div class="search-dropdown" id="endDropdown"></div>
                         </div>
-                        <!-- Hidden coords read by the submit handler (unchanged contract) -->
+                        <!-- hidden inputs for route submit handler -->
                         <input type="hidden" id="endLat">
                         <input type="hidden" id="endLon">
                     </div>
@@ -124,7 +120,6 @@
 
                 <hr class="divider">
 
-                <!-- Map-click mode toggle -->
                 <div class="map-mode-group">
                     <span class="map-mode-label">Click map to place point</span>
                     <div class="map-mode-toggle">
@@ -180,7 +175,6 @@
         <div id="map"></div>
     </div>
 
-    <!-- Auth modal -->
     <div id="authModal" class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="authModalTitle" hidden>
         <div class="auth-modal-overlay"></div>
         <div class="auth-modal-panel">
@@ -195,7 +189,6 @@
                 </button>
             </div>
 
-            <!-- Login form -->
             <form id="loginForm" class="auth-form" novalidate>
                 <div class="auth-form-group">
                     <label for="loginEmail">Email</label>
@@ -213,7 +206,6 @@
                 <p class="auth-switch"><a href="#" id="switchToForgotPassword">Forgot password?</a></p>
             </form>
 
-            <!-- Register form -->
             <form id="registerForm" class="auth-form" novalidate hidden>
                 <div class="auth-form-group">
                     <label for="registerEmail">Email</label>
@@ -242,7 +234,6 @@
                 <p class="auth-switch">Already have an account? <a href="#" id="switchToLogin">Sign in</a></p>
             </form>
 
-            <!-- Forgot password form -->
             <form id="forgotPasswordForm" class="auth-form" novalidate hidden>
                 <p class="auth-hint">Enter your email address and we'll send you a link to reset your password.</p>
                 <div class="auth-form-group">
@@ -258,7 +249,6 @@
                 <p class="auth-switch"><a href="#" id="switchToLoginFromForgot">Back to sign in</a></p>
             </form>
 
-            <!-- Reset password form -->
             <form id="resetPasswordForm" class="auth-form" novalidate hidden>
                 <div class="auth-form-group">
                     <label for="resetPassword">New password</label>

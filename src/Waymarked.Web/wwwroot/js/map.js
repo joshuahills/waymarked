@@ -1,7 +1,6 @@
-// ── Map initialisation ──────────────────────────────────────────────
+// Exposed on window so theme.js can swap tile layers on dark-mode toggle.
 const map = L.map('map').setView([54.0, -2.0], 6);
 
-// Exposed on window so theme.js can swap tile layers on dark-mode toggle.
 window.map = map;
 window.tileLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
     maxZoom: 17,
@@ -11,7 +10,6 @@ window.tileLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png
 let routeLayer = null;
 let arrowMarkers = [];
 
-// ── DOM refs ────────────────────────────────────────────────────────
 const form              = document.getElementById('routeForm');
 const planButton        = document.getElementById('planButton');
 const errorDiv          = document.getElementById('error');
@@ -46,7 +44,6 @@ const exportGpx         = document.getElementById('exportGpx');
 const exportKml         = document.getElementById('exportKml');
 const exportGeoJson     = document.getElementById('exportGeoJson');
 
-// ── Marker state ────────────────────────────────────────────────────
 let startMarker = null;
 let endMarker   = null;
 let clickMode   = 'off'; // 'start' | 'end' | 'off'

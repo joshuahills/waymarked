@@ -1,4 +1,3 @@
-// ── Nominatim helpers ───────────────────────────────────────────────
 const NOM_HEADERS = { 'User-Agent': 'Waymarked/1.0' };
 
 async function geocode(query) {
@@ -19,8 +18,6 @@ function debounce(fn, delay) {
     let timer;
     return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), delay); };
 }
-
-// ── Point setters ───────────────────────────────────────────────────
 
 function setStartPoint(lat, lon, name) {
     startLatInput.value = lat;
@@ -44,17 +41,13 @@ function setStartPoint(lat, lon, name) {
         } catch {
             startSearch.value = coordLabel(newLat, newLon);
         }
-        updateFieldStates();
     });
-
-    updateFieldStates();
 }
 
 function clearStartPoint() {
     startLatInput.value = '';
     startLonInput.value = '';
     if (startMarker) { map.removeLayer(startMarker); startMarker = null; }
-    updateFieldStates();
 }
 
 function setEndPoint(lat, lon, name) {
@@ -79,10 +72,7 @@ function setEndPoint(lat, lon, name) {
         } catch {
             endSearch.value = coordLabel(newLat, newLon);
         }
-        updateFieldStates();
     });
-
-    updateFieldStates();
 }
 
 function clearEndPoint() {
@@ -90,14 +80,11 @@ function clearEndPoint() {
     endLonInput.value = '';
     endSearch.value   = '';
     if (endMarker) { map.removeLayer(endMarker); endMarker = null; }
-    updateFieldStates();
 }
 
 function coordLabel(lat, lon) {
     return `${parseFloat(lat).toFixed(5)}, ${parseFloat(lon).toFixed(5)}`;
 }
-
-// ── Dropdown helpers ────────────────────────────────────────────────
 
 function closeDropdown(dropdown) {
     dropdown.classList.remove('visible');
@@ -128,8 +115,6 @@ function showDropdown(dropdown, results, onSelect) {
     dropdown.classList.add('visible');
 }
 
-// ── Search box wiring ───────────────────────────────────────────────
-
 function setupSearch(searchInput, dropdown, latInput, lonInput, removeMarkerFn, setPointFn) {
     const debouncedSearch = debounce(async query => {
         try {
@@ -153,7 +138,6 @@ function setupSearch(searchInput, dropdown, latInput, lonInput, removeMarkerFn, 
         } else {
             debouncedSearch(val);
         }
-        updateFieldStates();
     });
 
     // Hide dropdown on blur; brief delay lets mousedown on items fire first
@@ -178,7 +162,6 @@ function removeEndMarker() {
 setupSearch(startSearch, startDropdown, startLatInput, startLonInput, removeStartMarker, setStartPoint);
 setupSearch(endSearch,   endDropdown,   endLatInput,   endLonInput,   removeEndMarker,   setEndPoint);
 
-// Close dropdowns when clicking anywhere outside them
 document.addEventListener('click', e => {
     if (!e.target.closest('#startDropdown') && !e.target.closest('#startSearch')) {
         closeDropdown(startDropdown);

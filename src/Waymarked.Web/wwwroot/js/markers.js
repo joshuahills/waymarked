@@ -1,5 +1,3 @@
-// ── Map-click mode ──────────────────────────────────────────────────
-
 function setClickMode(mode) {
     clickMode = mode;
     modeStartBtn.className = 'mode-btn';
@@ -18,7 +16,7 @@ function setClickMode(mode) {
     }
 }
 
-setClickMode('off'); // initialise to Off
+setClickMode('off');
 
 // Clicking the active mode button a second time deactivates it
 modeStartBtn.addEventListener('click', () => setClickMode(clickMode === 'start' ? 'off' : 'start'));

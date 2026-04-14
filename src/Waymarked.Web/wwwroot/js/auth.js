@@ -1,6 +1,4 @@
-// ── Auth module ──────────────────────────────────────────────────────
 (function () {
-    // ── DOM refs ──────────────────────────────────────────────────────
     const signInBtn      = document.getElementById('signInBtn');
     const userInfo       = document.getElementById('userInfo');
     const userEmailEl    = document.getElementById('userEmail');
@@ -40,8 +38,6 @@
     // Token and email captured from URL params for the reset-password flow
     let _resetToken = null;
     let _resetEmail = null;
-
-    // ── Modal ─────────────────────────────────────────────────────────
 
     const allForms = [loginForm, registerForm, forgotPasswordForm, resetPasswordForm];
 
@@ -102,8 +98,6 @@
         modalTitle.textContent = 'Choose a new password';
     }
 
-    // ── Error helpers ─────────────────────────────────────────────────
-
     function showError(el, msg) {
         el.textContent = msg;
         el.classList.add('visible');
@@ -113,8 +107,6 @@
         el.textContent = '';
         el.classList.remove('visible');
     }
-
-    // ── Nav state ─────────────────────────────────────────────────────
 
     function setLoggedIn(email) {
         const truncated = email.length > 24 ? email.slice(0, 24) + '…' : email;
@@ -129,8 +121,6 @@
         signInBtn.removeAttribute('hidden');
     }
 
-    // ── Auth state check on load ──────────────────────────────────────
-
     async function checkAuth() {
         try {
             const res = await fetch('/api/auth/me', { credentials: 'same-origin' });
@@ -144,8 +134,6 @@
             setLoggedOut();
         }
     }
-
-    // ── Login ─────────────────────────────────────────────────────────
 
     loginForm.addEventListener('submit', async e => {
         e.preventDefault();
@@ -186,8 +174,6 @@
         }
     });
 
-    // ── Register ──────────────────────────────────────────────────────
-
     // Password requirements (ASP.NET Core Identity defaults)
     const pwRules = {
         length:    pw => pw.length >= 6,
@@ -226,7 +212,6 @@
     resetPwInput.addEventListener('input',  () => evaluatePasswordChecklist(resetPwInput, resetCfmInput, resetPwRequirements, resetSubmit));
     resetCfmInput.addEventListener('input', () => evaluatePasswordChecklist(resetPwInput, resetCfmInput, resetPwRequirements, resetSubmit));
 
-    // Start disabled — nothing typed yet
     registerSubmit.disabled = true;
     resetSubmit.disabled = true;
 
@@ -272,8 +257,6 @@
         }
     });
 
-    // ── Forgot password ───────────────────────────────────────────────
-
     forgotPasswordForm.addEventListener('submit', async e => {
         e.preventDefault();
         clearError(forgotError);
@@ -304,8 +287,6 @@
         }
     });
 
-    // ── Reset password ────────────────────────────────────────────────
-
     resetPasswordForm.addEventListener('submit', async e => {
         e.preventDefault();
         clearError(resetError);
@@ -327,10 +308,8 @@
             });
 
             if (res.ok) {
-                // Show login form with a success hint
                 showLogin();
                 showError(loginError, '');
-                // Pre-fill the email and show a friendly message
                 document.getElementById('loginEmail').value = _resetEmail;
                 const hint = document.createElement('p');
                 hint.className = 'auth-success';
@@ -355,8 +334,6 @@
         }
     });
 
-    // ── Sign out ──────────────────────────────────────────────────────
-
     signOutBtn.addEventListener('click', async () => {
         signOutBtn.disabled = true;
         try {
@@ -368,8 +345,6 @@
         setLoggedOut();
         signOutBtn.disabled = false;
     });
-
-    // ── Event wiring ──────────────────────────────────────────────────
 
     signInBtn.addEventListener('click', () => openModal('login'));
     modalClose.addEventListener('click', closeModal);
@@ -384,8 +359,6 @@
         if (e.key === 'Escape' && !modal.hasAttribute('hidden')) closeModal();
     });
 
-    // ── Password reset via URL params ─────────────────────────────────
-
     function initPasswordReset() {
         const params = new URLSearchParams(location.search);
         const token  = params.get('resetToken');
@@ -399,7 +372,6 @@
         }
     }
 
-    // ── Init ──────────────────────────────────────────────────────────
     checkAuth();
     initPasswordReset();
 })();

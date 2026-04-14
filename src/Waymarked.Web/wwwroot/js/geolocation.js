@@ -1,5 +1,3 @@
-// ── Geolocation — "Use my location" ─────────────────────────────────
-
 const geolocBtn   = document.getElementById('geolocBtn');
 const geolocError = document.getElementById('geolocError');
 
@@ -42,10 +40,8 @@ geolocBtn.addEventListener('click', () => {
                 const lat = position.coords.latitude;
                 const lon = position.coords.longitude;
 
-                // Pan/zoom to user location
                 map.setView([lat, lon], 14);
 
-                // Place distinct "you are here" marker (blue pulsing dot)
                 if (youAreHereMarker) map.removeLayer(youAreHereMarker);
                 youAreHereMarker = L.marker([lat, lon], {
                     icon: createYouAreHereIcon(),
@@ -60,7 +56,6 @@ geolocBtn.addEventListener('click', () => {
                     if (result.display_name) name = result.display_name;
                 } catch { /* fall back to coordinate label */ }
 
-                // Populate the start point (uses the existing setter from geocoder.js)
                 setStartPoint(lat, lon, name);
             } finally {
                 geolocBtn.classList.remove('geoloc-btn--loading');

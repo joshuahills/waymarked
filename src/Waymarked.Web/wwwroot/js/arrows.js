@@ -1,5 +1,3 @@
-// ── Arrow / turn-dot helpers ─────────────────────────────────────────
-
 function routeBearing(lat1, lon1, lat2, lon2) {
     const toRad = d => d * Math.PI / 180;
     const dLon  = toRad(lon2 - lon1);

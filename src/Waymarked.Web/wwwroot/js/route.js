@@ -1,5 +1,3 @@
-// ── Profile description ──────────────────────────────────────────────
-
 const profileDescriptions = {
     foot: 'Prefers footpaths and pavements. Good for shorter walks on mixed terrain.',
     hike: 'Prefers trails and bridleways, avoids steep terrain. Best for longer scenic routes.'
@@ -11,8 +9,6 @@ function updateProfileDescription() {
 
 profileSelect.addEventListener('change', updateProfileDescription);
 updateProfileDescription();
-
-// ── Route type toggle (Round Trip ↔ Point to Point) ─────────────────
 
 let lastRouteRequest = null;
 
@@ -46,17 +42,13 @@ function selectPointToPoint() {
 roundTripBtn.addEventListener('click', selectRoundTrip);
 pointToPointBtn.addEventListener('click', selectPointToPoint);
 
-// Default: Round Trip
 selectRoundTrip();
 
-// ── Steps toggle event listener ──────────────────────────────────────
 stepsToggle.addEventListener('click', () => {
     const open = stepsList.style.display !== 'none';
     stepsList.style.display = open ? 'none' : 'block';
     stepsToggle.textContent = open ? '▾ Show steps' : '▴ Hide steps';
 });
-
-// ── Error / stats helpers ────────────────────────────────────────────
 
 function showError(message) {
     errorDiv.textContent = message;
@@ -98,8 +90,6 @@ function showSteps(instructions) {
     stepsList.style.display = 'none';
 }
 
-// ── Form submission — reads hidden inputs, logic unchanged ───────────
-
 form.addEventListener('submit', async e => {
     e.preventDefault();
     hideError();
@@ -113,13 +103,11 @@ form.addEventListener('submit', async e => {
 
     const isRoundTrip = endLatVal === '' && endLonVal === '';
 
-    // Validate start point
     if (isNaN(startLat) || isNaN(startLon)) {
         showError('Please search for and select a start point');
         return;
     }
 
-    // Build payload based on mode
     let payload;
     if (isRoundTrip) {
         const distance = parseFloat(distanceInput.value);
@@ -208,8 +196,6 @@ form.addEventListener('submit', async e => {
         planButton.textContent = 'Plan Route';
     }
 });
-
-// ── Export download handler ──────────────────────────────────────────
 
 async function exportRoute(format, btn) {
     if (!lastRouteRequest) return;

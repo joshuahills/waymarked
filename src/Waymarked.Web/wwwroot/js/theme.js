@@ -1,7 +1,5 @@
-// ── Theme management ─────────────────────────────────────────────────
-// The inline script in <head> already applied the initial theme to prevent
-// flash of wrong theme. This file wires up the toggle button once the DOM
-// is ready.
+// The inline <head> script applied the initial theme to prevent FOUC.
+// This file wires up the toggle button once the DOM is ready.
 (function () {
     const root   = document.documentElement;
     const toggle = document.getElementById('theme-toggle');
