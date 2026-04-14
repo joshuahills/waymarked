@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
+using Scalar.AspNetCore;
 using System.Text;
 using System.Threading.RateLimiting;
 using Waymarked.Api;
@@ -101,6 +102,7 @@ app.UseAuthorization();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.MapScalarApiReference();
 }
 
 app.MapGet("/", () => "Waymarked API is running. POST to /api/routes to plan a route.");
@@ -116,8 +118,7 @@ app.MapPost("/api/routes", async (ApiRouteRequest apiRequest, GraphHopperClient 
 
     return Results.Ok(routeResult.Route);
 })
-.WithName("PlanRoute")
-.WithOpenApi();
+.WithName("PlanRoute");
 
 // ─── Export endpoints ────────────────────────────────────────────────────────
 // Accept the already-computed route response so no routing engine call is made.
@@ -128,24 +129,21 @@ app.MapPost("/api/routes/export/gpx", (WaymarkedRouteResponse route) =>
     var bytes = Encoding.UTF8.GetBytes(RouteExporter.BuildGpx(route));
     return Results.File(bytes, "application/gpx+xml", "waymarked-route.gpx");
 })
-.WithName("ExportGpx")
-.WithOpenApi();
+.WithName("ExportGpx");
 
 app.MapPost("/api/routes/export/kml", (WaymarkedRouteResponse route) =>
 {
     var bytes = Encoding.UTF8.GetBytes(RouteExporter.BuildKml(route));
     return Results.File(bytes, "application/vnd.google-earth.kml+xml", "waymarked-route.kml");
 })
-.WithName("ExportKml")
-.WithOpenApi();
+.WithName("ExportKml");
 
 app.MapPost("/api/routes/export/geojson", (WaymarkedRouteResponse route) =>
 {
     var bytes = Encoding.UTF8.GetBytes(RouteExporter.BuildGeoJson(route));
     return Results.File(bytes, "application/geo+json", "waymarked-route.geojson");
 })
-.WithName("ExportGeoJson")
-.WithOpenApi();
+.WithName("ExportGeoJson");
 
 app.MapGet("/api/bounds",() => Results.Ok(new
 {
