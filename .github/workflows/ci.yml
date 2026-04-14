@@ -123,8 +123,20 @@ jobs:
           docker stop gh-build
           docker rm gh-build
 
-      - name: Install Playwright browsers
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/Waymarked.E2E.Tests.csproj') }}
+
+      - name: Install Playwright browsers + system deps
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pwsh src/Waymarked.E2E.Tests/bin/Release/net10.0/playwright.ps1 install --with-deps
+
+      - name: Install Playwright system deps (browsers cached)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pwsh src/Waymarked.E2E.Tests/bin/Release/net10.0/playwright.ps1 install-deps
 
       - name: Run E2E tests
         env:
