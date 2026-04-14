@@ -1,17 +1,4 @@
 services:
-  db:
-    image: "postgres:17-alpine"
-    environment:
-      POSTGRES_USER: "postgres"
-      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
-      POSTGRES_DB: "waymarked"
-      POSTGRES_HOST_AUTH_METHOD: "scram-sha-256"
-      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
-    volumes:
-      - waymarked-postgres-data:/var/lib/postgresql/data
-    networks:
-      - "aspire"
-    restart: "always"
   env-dashboard:
     image: "mcr.microsoft.com/dotnet/nightly/aspire-dashboard:latest"
     ports:
@@ -47,7 +34,6 @@ services:
       HTTP_PORTS: "${WAYMARKED_API_PORT}"
       GRAPHHOPPER_HTTP: "http://graphhopper:8989"
       services__graphhopper__http__0: "http://graphhopper:8989"
-      ConnectionStrings__waymarked: "Host=db;Database=waymarked;Username=postgres;Password=${POSTGRES_PASSWORD}"
       OTEL_EXPORTER_OTLP_ENDPOINT: "http://env-dashboard:18889"
       OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
       OTEL_SERVICE_NAME: "waymarked-api"
@@ -55,8 +41,6 @@ services:
       - "${WAYMARKED_API_PORT}"
     depends_on:
       graphhopper:
-        condition: "service_started"
-      db:
         condition: "service_started"
     networks:
       - "aspire"
@@ -109,6 +93,3 @@ services:
 networks:
   aspire:
     driver: "bridge"
-
-volumes:
-  waymarked-postgres-data:
