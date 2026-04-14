@@ -44,15 +44,16 @@ var web = builder.AddProject<Projects.Waymarked_Web>("waymarked-web", launchProf
 // smtp4dev — local SMTP sink with a web UI for inspecting emails during development
 if (!builder.ExecutionContext.IsPublishMode)
 {
-    postgres.WithPgAdmin(c => c.WithHostPort(5050));
+    postgres.WithPgAdmin();
 
-    builder.AddContainer("smtp4dev", "rnwood/smtp4dev")
-        .WithEndpoint(port: 2525, targetPort: 25, name: "smtp")
-        .WithHttpEndpoint(port: 5080, targetPort: 80, name: "webui")
+    var smtp4dev = builder.AddContainer("smtp4dev", "rnwood/smtp4dev")
+        .WithEndpoint(targetPort: 25, name: "smtp")
+        .WithHttpEndpoint(targetPort: 80, name: "webui")
         .WithHttpHealthCheck("/", endpointName: "webui");
 
-    api.WithEnvironment("Email__Host", "localhost")
-       .WithEnvironment("Email__Port", "2525");
+    var smtpEndpoint = smtp4dev.GetEndpoint("smtp");
+    api.WithEnvironment("Email__Host", smtpEndpoint.Property(EndpointProperty.Host))
+       .WithEnvironment("Email__Port", smtpEndpoint.Property(EndpointProperty.Port));
 }
 
 if (builder.ExecutionContext.IsPublishMode)
