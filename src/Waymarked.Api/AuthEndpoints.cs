@@ -37,7 +37,7 @@ internal static class AuthEndpoints
                 return Results.BadRequest(new { errors = new[] { "Email and password are required." } });
 
             var result = await signInManager.PasswordSignInAsync(
-                req.Email, req.Password, isPersistent: true, lockoutOnFailure: false);
+                req.Email, req.Password, isPersistent: true, lockoutOnFailure: true);
 
             return result.Succeeded ? Results.Ok() : Results.Unauthorized();
         });
@@ -76,7 +76,8 @@ internal static class AuthEndpoints
             }
 
             return Results.Ok();
-        });
+        })
+            .RequireRateLimiting("forgot-password");
 
         group.MapPost("/reset-password", async (
             ResetPasswordRequest req,

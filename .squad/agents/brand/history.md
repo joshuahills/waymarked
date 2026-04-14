@@ -347,3 +347,43 @@ No bugs found. Conversion (km/miles → metres) and validation (500m–100km) we
 - Versions chosen to match the existing OTel 1.15.x family already in use.
 
 **Build result:** `Build succeeded. 0 Error(s)` (21 pre-existing warnings, 0 errors)
+
+
+### Auth Hardening: Lockout, Token Lifespan, Rate Limiting, Tests (2026-04-14)
+
+**What was implemented:**
+1. Enabled account lockout on failed login attempts (5 attempts → 15 min lockout)
+2. Configured password reset token lifespan (24 hours via DataProtectionTokenProviderOptions)
+3. Added rate limiting to forgot-password endpoint (3 requests per 15 minutes, fixed window)
+4. Added 7 integration tests for forgot-password and reset-password endpoints
+
+**Lockout configuration (Program.cs):**
+- MaxFailedAccessAttempts = 5
+- DefaultLockoutTimeSpan = 15 minutes  
+- AllowedForNewUsers = true
+- lockoutOnFailure: true in PasswordSignInAsync (AuthEndpoints.cs line 40)
+
+**Token lifespan (Program.cs):**
+- DataProtectionTokenProviderOptions.TokenLifespan = 24 hours
+- Applies to password reset tokens generated via GeneratePasswordResetTokenAsync
+
+**Rate limiting implementation:**
+- Uses ASP.NET Core AddRateLimiter with FixedWindowLimiter policy
+- Policy name: 'forgot-password', applied via .RequireRateLimiting() on endpoint
+- Disabled in Test environment to avoid cross-test interference
+- Returns 429 (Too Many Requests) when limit exceeded
+
+**Test implementation:**
+- Added FakeEmailSender in test factory to replace SmtpEmailSender (avoids SMTP connection in tests)
+- 4 forgot-password tests: known email, unknown email, empty email, null body (all return 200 for anti-enumeration)
+- 3 reset-password tests: invalid token, missing fields, unknown email (all return 400)
+- All 7 new tests passing; 3 pre-existing test failures unrelated to this work
+
+**Files modified:**
+- src/Waymarked.Api/Program.cs — lockout config, token lifespan, rate limiting services + middleware
+- src/Waymarked.Api/AuthEndpoints.cs — lockoutOnFailure: true, rate limiting on forgot-password endpoint  
+- src/Waymarked.Api.Tests/AuthEndpointTests.cs — 7 new integration tests
+- src/Waymarked.Api.Tests/AuthWebApplicationFactory.cs — FakeEmailSender, SMTP settings, lockout disabled in tests
+
+**Build result:** Build succeeded. All tests: 45 total, 42 passed, 3 failed (pre-existing).
+

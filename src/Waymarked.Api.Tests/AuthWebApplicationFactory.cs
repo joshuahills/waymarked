@@ -1,9 +1,14 @@
 namespace Waymarked.Api.Tests;
 
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
+using Waymarked.Api.Data;
+using Waymarked.Api.Email;
 using Waymarked.Routing;
 
 /// <summary>
@@ -35,8 +40,49 @@ public class AuthWebApplicationFactory : WebApplicationFactory<Program>
 
             // ── InMemory database (replaces Npgsql) ───────────────────────────
             CustomWebApplicationFactory.ReplaceDbContextWithInMemory(services, _dbName);
+
+            // ── Stub email sender (no actual SMTP in tests) ──────────────────
+            services.RemoveAll<IEmailSender<ApplicationUser>>();
+            services.AddSingleton<IEmailSender<ApplicationUser>, FakeEmailSender>();
+
+            // ── SMTP settings with valid FrontendBaseUrl ──────────────────────
+            services.Configure<SmtpSettings>(options =>
+            {
+                options.FrontendBaseUrl = "https://test.waymarked.local";
+            });
+
+            // ── Disable lockout in tests to avoid cross-test interference ────
+            services.Configure<IdentityOptions>(options =>
+            {
+                options.Lockout.AllowedForNewUsers = false;
+                options.Lockout.MaxFailedAccessAttempts = int.MaxValue;
+            });
         });
 
         builder.UseEnvironment("Test");
+    }
+}
+
+/// <summary>
+/// Fake email sender for tests — logs email sends but doesn't actually send anything.
+/// </summary>
+internal class FakeEmailSender : IEmailSender<ApplicationUser>
+{
+    public Task SendConfirmationLinkAsync(ApplicationUser user, string email, string confirmationLink)
+    {
+        // No-op for tests.
+        return Task.CompletedTask;
+    }
+
+    public Task SendPasswordResetLinkAsync(ApplicationUser user, string email, string resetLink)
+    {
+        // No-op for tests.
+        return Task.CompletedTask;
+    }
+
+    public Task SendPasswordResetCodeAsync(ApplicationUser user, string email, string resetCode)
+    {
+        // No-op for tests.
+        return Task.CompletedTask;
     }
 }

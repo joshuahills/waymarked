@@ -322,4 +322,108 @@ public class AuthEndpointTests : IClassFixture<AuthWebApplicationFactory>
         var meBody = await meResponse.Content.ReadAsStringAsync();
         meBody.Should().Contain(email, "/me must include the registered user's email");
     }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Forgot password
+    // ──────────────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task ForgotPassword_KnownEmail_Returns200()
+    {
+        var client = CreateClient();
+        var email = await RegisterUser(client);
+
+        var response = await client.PostAsJsonAsync("/api/auth/forgot-password",
+            new { email });
+
+        // Always 200 — anti-enumeration by design.
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task ForgotPassword_UnknownEmail_Returns200()
+    {
+        var client = CreateClient();
+        var response = await client.PostAsJsonAsync("/api/auth/forgot-password",
+            new { email = "nobody@waymarked.test" });
+
+        // Must return 200 even for unknown emails to prevent user enumeration.
+        response.StatusCode.Should().Be(HttpStatusCode.OK,
+            "forgot-password must never reveal whether the email is registered");
+    }
+
+    [Fact]
+    public async Task ForgotPassword_EmptyEmail_Returns200()
+    {
+        var client = CreateClient();
+        var response = await client.PostAsJsonAsync("/api/auth/forgot-password",
+            new { email = "" });
+
+        // Empty email is handled silently — endpoint skips token generation and returns 200.
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task ForgotPassword_NullBody_Returns200()
+    {
+        var client = CreateClient();
+        // Omit the email field entirely — should be treated as empty.
+        var response = await client.PostAsJsonAsync("/api/auth/forgot-password",
+            new { });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Reset password
+    // ──────────────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task ResetPassword_InvalidToken_Returns400()
+    {
+        var client = CreateClient();
+        var email = await RegisterUser(client);
+
+        // Submit a reset with a bogus token — Identity will reject it.
+        var response = await client.PostAsJsonAsync("/api/auth/reset-password", new
+        {
+            email,
+            token = "invalid-token-value",
+            newPassword = "NewValidPass1!"
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest,
+            "an invalid reset token must be rejected with 400");
+    }
+
+    [Fact]
+    public async Task ResetPassword_MissingFields_Returns400()
+    {
+        var client = CreateClient();
+
+        // Missing token and newPassword.
+        var response = await client.PostAsJsonAsync("/api/auth/reset-password", new
+        {
+            email = UniqueEmail()
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest,
+            "missing required fields must return 400");
+    }
+
+    [Fact]
+    public async Task ResetPassword_UnknownEmail_Returns400()
+    {
+        var client = CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/auth/reset-password", new
+        {
+            email = "ghost@waymarked.test",
+            token = "some-token",
+            newPassword = "NewValidPass1!"
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest,
+            "reset-password with unknown email returns 400 (user not found)");
+    }
 }
