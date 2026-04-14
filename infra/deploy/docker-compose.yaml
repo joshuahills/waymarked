@@ -90,6 +90,83 @@ services:
         condition: "service_started"
     networks:
       - "aspire"
+  otel-collector:
+    image: "otel/opentelemetry-collector-contrib:0.100.0"
+    volumes:
+      - type: "bind"
+        target: "/etc/otelcol-contrib/config.yaml"
+        source: "../otel-collector/config.yaml"
+        read_only: true
+    expose:
+      - "4317"
+      - "4318"
+    networks:
+      - "aspire"
+    restart: "always"
+  loki:
+    image: "grafana/loki:2.9.10"
+    command: ["-config.file=/etc/loki/config.yaml"]
+    volumes:
+      - type: "bind"
+        target: "/etc/loki/config.yaml"
+        source: "../loki/config.yaml"
+        read_only: true
+      - type: "volume"
+        target: "/tmp/loki"
+        source: "loki-data"
+    expose:
+      - "3100"
+    networks:
+      - "aspire"
+    restart: "always"
+  tempo:
+    image: "grafana/tempo:2.4.1"
+    command: ["-config.file=/etc/tempo/config.yaml"]
+    volumes:
+      - type: "bind"
+        target: "/etc/tempo/config.yaml"
+        source: "../tempo/config.yaml"
+        read_only: true
+      - type: "volume"
+        target: "/tmp/tempo"
+        source: "tempo-data"
+    expose:
+      - "3200"
+      - "4317"
+    networks:
+      - "aspire"
+    restart: "always"
+  grafana:
+    image: "grafana/grafana:10.4.3"
+    ports:
+      - "3000:3000"
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Admin"
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+    volumes:
+      - type: "bind"
+        target: "/etc/grafana/provisioning"
+        source: "../grafana/provisioning"
+        read_only: true
+      - type: "volume"
+        target: "/var/lib/grafana"
+        source: "grafana-data"
+    depends_on:
+      loki:
+        condition: "service_started"
+      tempo:
+        condition: "service_started"
+    networks:
+      - "aspire"
+    restart: "always"
 networks:
   aspire:
     driver: "bridge"
+
+volumes:
+  waymarked-postgres-data:
+  loki-data:
+  tempo-data:
+  grafana-data:
+
