@@ -119,15 +119,18 @@
         userEmailEl.textContent = '';
         userInfo.setAttribute('hidden', '');
         signInBtn.removeAttribute('hidden');
+        localStorage.removeItem('waymarked_authed');
     }
 
     async function checkAuth() {
+        if (!localStorage.getItem('waymarked_authed')) return;
         try {
             const res = await fetch('/api/auth/me', { credentials: 'same-origin' });
             if (res.ok) {
                 const data = await res.json();
                 setLoggedIn(data.email);
             } else {
+                // Session expired or cookie gone — self-heal by clearing the flag
                 setLoggedOut();
             }
         } catch {
@@ -160,6 +163,7 @@
             });
 
             if (res.ok) {
+                localStorage.setItem('waymarked_authed', '1');
                 setLoggedIn(email);
                 closeModal();
             } else {
@@ -240,6 +244,7 @@
             });
 
             if (res.ok) {
+                localStorage.setItem('waymarked_authed', '1');
                 setLoggedIn(email);
                 closeModal();
             } else {
