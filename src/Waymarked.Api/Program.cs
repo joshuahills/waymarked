@@ -73,6 +73,7 @@ if (!builder.Environment.IsEnvironment("Test"))
 // Email
 builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("Email"));
 builder.Services.AddTransient<IEmailSender<ApplicationUser>, SmtpEmailSender>();
+builder.Services.AddTransient<IWaymarkedEmailSender, SmtpEmailSender>();
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();

@@ -12,8 +12,9 @@ internal static class AuthEndpoints
     {
         var group = app.MapGroup("/api/auth");
 
-        group.MapPost("/register", async (RegisterRequest req, UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager) =>
+        group.MapPost("/register", async (RegisterRequest req, UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IWaymarkedEmailSender emailSender, ILoggerFactory loggerFactory) =>
         {
+            var logger = loggerFactory.CreateLogger("AuthEndpoints");
             if (string.IsNullOrEmpty(req.Email))
                 return Results.BadRequest(new { errors = new[] { "Email is required." } });
 
@@ -27,6 +28,10 @@ internal static class AuthEndpoints
                 return Results.BadRequest(new { errors = result.Errors.Select(e => e.Description).ToArray() });
 
             await signInManager.SignInAsync(user, isPersistent: true);
+
+            _ = emailSender.SendWelcomeEmailAsync(user, req.Email)
+                .ContinueWith(t => logger.LogError(t.Exception, "Failed to send welcome email to {Email}", req.Email),
+                    TaskContinuationOptions.OnlyOnFaulted);
 
             return Results.Ok();
         });

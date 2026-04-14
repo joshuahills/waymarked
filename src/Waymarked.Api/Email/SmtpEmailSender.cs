@@ -8,9 +8,16 @@ using MimeKit;
 using Waymarked.Api.Data;
 
 public class SmtpEmailSender(IOptions<SmtpSettings> options, ILogger<SmtpEmailSender> logger)
-    : IEmailSender<ApplicationUser>
+    : IEmailSender<ApplicationUser>, IWaymarkedEmailSender
 {
     private readonly SmtpSettings _settings = options.Value;
+
+    public Task SendWelcomeEmailAsync(ApplicationUser user, string email) =>
+        SendAsync(email, "Welcome to Waymarked!",
+            """
+            <p>Welcome to Waymarked!</p>
+            <p>Your account is all set. Start planning your next adventure.</p>
+            """);
 
     public Task SendConfirmationLinkAsync(ApplicationUser user, string email, string confirmationLink) =>
         SendAsync(email, "Confirm your Waymarked account",

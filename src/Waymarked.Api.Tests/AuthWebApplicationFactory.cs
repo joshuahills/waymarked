@@ -43,7 +43,10 @@ public class AuthWebApplicationFactory : WebApplicationFactory<Program>
 
             // ── Stub email sender (no actual SMTP in tests) ──────────────────
             services.RemoveAll<IEmailSender<ApplicationUser>>();
-            services.AddSingleton<IEmailSender<ApplicationUser>, FakeEmailSender>();
+            services.RemoveAll<IWaymarkedEmailSender>();
+            services.AddSingleton<FakeEmailSender>();
+            services.AddSingleton<IEmailSender<ApplicationUser>>(sp => sp.GetRequiredService<FakeEmailSender>());
+            services.AddSingleton<IWaymarkedEmailSender>(sp => sp.GetRequiredService<FakeEmailSender>());
 
             // ── SMTP settings with valid FrontendBaseUrl ──────────────────────
             services.Configure<SmtpSettings>(options =>
@@ -66,8 +69,14 @@ public class AuthWebApplicationFactory : WebApplicationFactory<Program>
 /// <summary>
 /// Fake email sender for tests — logs email sends but doesn't actually send anything.
 /// </summary>
-internal class FakeEmailSender : IEmailSender<ApplicationUser>
+internal class FakeEmailSender : IEmailSender<ApplicationUser>, IWaymarkedEmailSender
 {
+    public Task SendWelcomeEmailAsync(ApplicationUser user, string email)
+    {
+        // No-op for tests.
+        return Task.CompletedTask;
+    }
+
     public Task SendConfirmationLinkAsync(ApplicationUser user, string email, string confirmationLink)
     {
         // No-op for tests.
