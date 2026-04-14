@@ -2,8 +2,8 @@ var builder = DistributedApplication.CreateBuilder(args);
 
 builder.AddDockerComposeEnvironment("env");
 
-var db = builder.AddPostgres("db")
-    .AddDatabase("waymarked");
+var postgres = builder.AddPostgres("db");
+var db = postgres.AddDatabase("waymarked");
 
 // In CI, use the pre-built image (graph already on disk) to avoid a 5-min rebuild.
 var prebuiltImage = Environment.GetEnvironmentVariable("GRAPHHOPPER_PREBUILT_IMAGE");
@@ -44,6 +44,8 @@ var web = builder.AddProject<Projects.Waymarked_Web>("waymarked-web", launchProf
 // smtp4dev — local SMTP sink with a web UI for inspecting emails during development
 if (!builder.ExecutionContext.IsPublishMode)
 {
+    postgres.WithPgAdmin(c => c.WithHostPort(5050));
+
     builder.AddContainer("smtp4dev", "rnwood/smtp4dev")
         .WithEndpoint(port: 2525, targetPort: 25, name: "smtp")
         .WithHttpEndpoint(port: 5080, targetPort: 80, name: "webui")
