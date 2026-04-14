@@ -108,3 +108,19 @@ _(none yet — project just started)_
 **File lock pattern (confirmed again):** Must stop `Waymarked.AppHost`, `Waymarked.Api`, and `Waymarked.Web` processes before building the E2E project. All have file locks on shared DLLs during normal Aspire operation.
 
 **Total test count post-commit:** 41 routing unit + 33 API integration + 17 auth E2E = 91 active (+ 5 auth API skipped)
+
+### Auth Hardening Integration Tests (April 2026)
+
+**Context:** Brand implemented 4 pre-production auth security items:
+1. Account lockout: 5 failed attempts → 15-minute lockout
+2. Token lifespan: 24-hour expiration on reset/confirmation tokens
+3. Rate limiting: `/api/auth/forgot-password` limited to 3 requests/15 minutes
+4. Integration test expansion: 7 new tests for forgot-password and reset-password flows
+
+**Coverage added to `AuthEndpointTests.cs`:**
+- Forgot-password endpoint validation and rate limiting enforcement
+- Reset-password endpoint with token validation
+- All 7 tests passing; test infrastructure includes `FakeEmailSender` for email mocking
+- Rate limiting disabled in test environment via configuration
+
+**Total test count post-hardening:** 41 routing unit + 40 API integration (33 existing auth + 7 new hardening) + 17 E2E = 98 active (+ 5 auth API skipped)
