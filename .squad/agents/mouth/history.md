@@ -247,6 +247,8 @@ Built the frontend auth UI against ASP.NET Core Identity backend. Cookie auth �
 - **Modal `hidden` attribute:** Prefer `hidden` attribute + `[hidden] { display: none }` CSS over toggling `display` directly — more semantic, works with forms for reset state.
 - **`display: flex` beats `[hidden]`:** Any element with an explicit `display` CSS rule will override the browser's built-in `[hidden] { display: none }`. Always add `[selector][hidden] { display: none; }` alongside any flex/grid container that is also toggled via the `hidden` attribute.
 - **Clear text on hide:** When hiding a container that holds user data (e.g. an email span), always clear the text content too — hiding the wrapper alone leaves stale data in the DOM that can flash if the element becomes visible again.
+- **Guard auth probes with a localStorage flag:** With cookie auth, JS can't inspect the cookie directly. A `localStorage` flag (`waymarked_authed`) set on login/register and cleared on logout lets us skip the `/me` round-trip for anonymous users entirely. If the cookie expires, the 401 self-heals by clearing the flag — no stale state risk.
+- **`setLoggedOut()` must own the flag clear:** Centralising `localStorage.removeItem('waymarked_authed')` inside `setLoggedOut()` means logout, 401 self-heal, and any future code paths all stay in sync automatically.
 
 
 ---
