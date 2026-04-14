@@ -387,3 +387,38 @@ No bugs found. Conversion (km/miles → metres) and validation (500m–100km) we
 
 **Build result:** Build succeeded. All tests: 45 total, 42 passed, 3 failed (pre-existing).
 
+### Email Stub Cleanup + C# Comment Polish (2026-04-14)
+
+**What was done:**
+- `SendConfirmationLinkAsync` in `SmtpEmailSender` replaced with `Task.CompletedTask` + comment explaining it's an interface stub (email confirmation is not used; `/register` auto-signs-in).
+- `SendPasswordResetCodeAsync` replaced with `Task.CompletedTask` + comment (code-based reset not implemented).
+- `SendPasswordResetLinkAsync` and `SendWelcomeEmailAsync` left untouched (both actively used).
+- `FakeEmailSender` in tests cleaned up — all four methods collapsed to expression-body `Task.CompletedTask` (no "No-op for tests." comments needed).
+- `Program.cs` stripped of restatement comments (`// Add service defaults`, `// Database and Identity`, `// Email`, `// Configure the HTTP request pipeline`, etc.). Kept comments explaining WHY (rate limiting test bypass, CI elevation flag, `// Ensure the database schema exists (migrations come later)`).
+- `AuthEndpointTests.cs` had one leftover `// Missing token and newPassword.` comment removed.
+
+**Rule reinforced:** Keep comments that say WHY (security, workarounds, non-obvious choices). Remove comments that restate the code.
+
+**Build result:** Compilation clean. Tests: 45 total, 42 passed, 3 failed (pre-existing, unrelated).
+
+
+
+**What was implemented:**
+- Added `IWaymarkedEmailSender` interface in `Waymarked.Api/Email/IWaymarkedEmailSender.cs` with a single `SendWelcomeEmailAsync(ApplicationUser user, string email)` method. Kept separate from `IEmailSender<ApplicationUser>` (which is a fixed ASP.NET Identity contract).
+- `SmtpEmailSender` now implements both `IEmailSender<ApplicationUser>` and `IWaymarkedEmailSender`.
+- `SendWelcomeEmailAsync` sends a simple "Welcome to Waymarked! Your account is all set." HTML email.
+- `/api/auth/register` endpoint injects `IWaymarkedEmailSender` and calls `SendWelcomeEmailAsync` **fire-and-forget** after sign-in: `_ = emailSender.SendWelcomeEmailAsync(...).ContinueWith(t => logger.LogError(...), TaskContinuationOptions.OnlyOnFaulted)`.
+- Email failure never blocks registration or sign-in — `Results.Ok()` is returned regardless.
+
+**DI registration:**
+- `Program.cs`: Added `builder.Services.AddTransient<IWaymarkedEmailSender, SmtpEmailSender>()` alongside the existing `IEmailSender<ApplicationUser>` registration.
+
+**Test factory updates (`AuthWebApplicationFactory.cs`):**
+- `FakeEmailSender` now implements both `IEmailSender<ApplicationUser>` and `IWaymarkedEmailSender`.
+- Registered as a singleton via concrete type first, then resolved for both interfaces — avoids two separate singleton instances.
+
+**ILogger note:**
+- `AuthEndpoints` is a `static class`. Cannot be used as a type argument (e.g., `ILogger<AuthEndpoints>`). Injected `ILoggerFactory` instead and called `loggerFactory.CreateLogger("AuthEndpoints")`.
+
+**Build result:** Compiled successfully. Tests: 45 total, 42 passed, 3 failed (pre-existing, unrelated to email).
+
