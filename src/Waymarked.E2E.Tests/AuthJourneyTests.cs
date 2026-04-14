@@ -594,8 +594,8 @@ public class AuthJourneyTests
 
             await page.Keyboard.PressAsync("Escape");
 
-            await page.WaitForSelectorAsync("#authModal[hidden]",
-                new PageWaitForSelectorOptions { Timeout = 5_000 });
+            await page.WaitForSelectorAsync("#authModal",
+                new PageWaitForSelectorOptions { State = WaitForSelectorState.Hidden, Timeout = 5_000 });
 
             (await page.Locator("#authModal").IsHiddenAsync()).Should().BeTrue(
                 "modal should close when Escape is pressed");
@@ -618,10 +618,14 @@ public class AuthJourneyTests
             (await page.Locator("#authModal").IsVisibleAsync()).Should().BeTrue(
                 "modal must be open before clicking the overlay");
 
-            await page.ClickAsync(".auth-modal-overlay");
+            // Click the top-left corner of the overlay backdrop — the modal panel is
+            // flexbox-centered so corners are safely outside it and not intercepted.
+            var overlayBox = await page.Locator(".auth-modal-overlay").BoundingBoxAsync();
+            overlayBox.Should().NotBeNull("overlay must be in the DOM when the modal is open");
+            await page.Mouse.ClickAsync(overlayBox!.X + 10, overlayBox.Y + 10);
 
-            await page.WaitForSelectorAsync("#authModal[hidden]",
-                new PageWaitForSelectorOptions { Timeout = 5_000 });
+            await page.WaitForSelectorAsync("#authModal",
+                new PageWaitForSelectorOptions { State = WaitForSelectorState.Hidden, Timeout = 5_000 });
 
             (await page.Locator("#authModal").IsHiddenAsync()).Should().BeTrue(
                 "modal should close when the overlay backdrop is clicked");
