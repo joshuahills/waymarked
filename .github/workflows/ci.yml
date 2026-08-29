@@ -219,3 +219,39 @@ jobs:
             cd /opt/waymarked
             docker compose pull
             docker compose up -d --remove-orphans
+
+      # The shared Caddy proxy routes waymarked.hills.dev -> waymarked-web over
+      # the external `edge` network. This repo owns exactly one file on the
+      # proxy: /srv/proxy/conf.d/waymarked.caddy.
+      - name: Copy proxy config to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          source: "infra/deploy/waymarked.caddy"
+          target: /srv/proxy/conf.d
+          strip_components: 2
+
+      - name: Reload proxy
+        uses: appleboy/ssh-action@v1
+        env:
+          PROXY_CONTAINER: ${{ vars.PROXY_CONTAINER }}
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          envs: PROXY_CONTAINER
+          script: |
+            set -e
+            # PROXY_CONTAINER is an optional Actions variable; fall back to the
+            # only running container built from a caddy image.
+            if [ -z "$PROXY_CONTAINER" ]; then
+              PROXY_CONTAINER=$(docker ps --format '{{.Names}}\t{{.Image}}' | awk -F'\t' '$2 ~ /caddy/ {print $1; exit}')
+            fi
+            if [ -z "$PROXY_CONTAINER" ]; then
+              echo "::error::Could not find the shared Caddy proxy container; set the PROXY_CONTAINER repository variable."
+              exit 1
+            fi
+            docker exec "$PROXY_CONTAINER" caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+            docker exec "$PROXY_CONTAINER" caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile

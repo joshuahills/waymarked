@@ -1,6 +1,10 @@
+using Aspire.Hosting.Docker.Resources.ComposeNodes;
+
+const string EdgeNetwork = "edge";
+
 var builder = DistributedApplication.CreateBuilder(args);
 
-builder.AddDockerComposeEnvironment("env");
+var compose = builder.AddDockerComposeEnvironment("env");
 
 var postgres = builder.AddPostgres("db")
     .WithDataVolume("waymarked-postgres-data");
@@ -70,10 +74,18 @@ if (builder.ExecutionContext.IsPublishMode)
     web.WithContainerRegistry(registry).WithRemoteImageTag("latest");
 #pragma warning restore ASPIRECOMPUTE003, ASPIREPIPELINES003
 
-    // Expose on 8081 so the shared Caddy instance can reverse-proxy to it.
+    // The server's shared Caddy proxy reaches apps over the external `edge`
+    // Docker network by *container name* (see infra/deploy/waymarked.caddy).
+    // Nothing is published on a host port -- the proxy is the only ingress.
+    compose.ConfigureComposeFile(file =>
+    {
+        file.AddNetwork(new Network { Name = EdgeNetwork, External = true });
+    });
+
     web.PublishAsDockerComposeService((resource, service) =>
     {
-        service.Ports.Add("8081:8080");
+        service.ContainerName = "waymarked-web";
+        service.Networks.Add(EdgeNetwork);
     });
 }
 

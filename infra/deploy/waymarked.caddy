@@ -1,0 +1,29 @@
+# Waymarked ingress.
+#
+# Deployed to /srv/proxy/conf.d/waymarked.caddy on the shared proxy by the
+# CI "deploy" job. This is the ONLY proxy file this repo's pipeline is allowed
+# to write, so it can never disturb another app's routing.
+#
+# TLS is not configured here on purpose -- the shared Caddyfile's global
+# options supply the ACME email and the Porkbun DNS-01 challenge.
+#
+# Unlike the *.internal.hills.dev apps this site is public, so the domain
+# defaults to the real hostname; override with WAYMARKED_DOMAIN if needed.
+
+{$WAYMARKED_DOMAIN:waymarked.hills.dev} {
+        # Container name, not the compose service name. Service aliases are only
+        # unique within a stack; on the shared `edge` network another app could
+        # also call its service "web". The name is pinned in the AppHost
+        # (PublishAsDockerComposeService -> ContainerName) and the container
+        # joins `edge` there too.
+        reverse_proxy waymarked-web:8080
+
+        encode gzip zstd
+
+        header {
+                Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+                X-Frame-Options "DENY"
+                X-Content-Type-Options "nosniff"
+                Referrer-Policy "strict-origin-when-cross-origin"
+        }
+}

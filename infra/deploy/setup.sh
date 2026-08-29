@@ -47,6 +47,9 @@ WAYMARKED_WEB_IMAGE=ghcr.io/$GH_REPO/waymarked-web:latest
 # ASP.NET Core internal HTTP port (default: 8080, matches SDK container publishing)
 WAYMARKED_API_PORT=8080
 WAYMARKED_WEB_PORT=8080
+
+# Postgres superuser password (generated once here; the data volume is initialised with it)
+DB_PASSWORD=$(openssl rand -hex 24)
 EOF
 
 echo "==> Creating 'deploy' user for CI deployments..."
@@ -81,16 +84,15 @@ echo "   DEPLOY_HOST   — this server's IP or hostname"
 echo "   DEPLOY_USER   — deploy"
 echo "   DEPLOY_SSH_KEY — contents of ~/.ssh/waymarked_deploy (private key)"
 echo ""
-echo "3. Configure the existing Caddy to route waymarked.hills.dev:"
-echo "   a. Add this to the existing Caddy's docker-compose.yml (under the caddy service):"
-echo "      extra_hosts:"
-echo "        - \"host.docker.internal:host-gateway\""
-echo ""
-echo "   b. Append the Waymarked site block from infra/deploy/Caddyfile to the"
-echo "      existing Caddy's Caddyfile (use host.docker.internal:8081)."
-echo ""
-echo "   c. Reload the existing Caddy:"
-echo "      docker exec <caddy-container> caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile"
+echo "3. Wire up the shared Caddy proxy (waymarked.hills.dev):"
+echo "   The web container joins the external 'edge' Docker network as"
+echo "   'waymarked-web', and CI installs infra/deploy/waymarked.caddy into"
+echo "   /srv/proxy/conf.d/ then reloads the proxy. Make sure that:"
+echo "   a. The 'edge' network exists:      docker network inspect edge >/dev/null || docker network create edge"
+echo "   b. The proxy container is attached to 'edge' and its Caddyfile imports conf.d/*.caddy"
+echo "   c. The deploy user can write there:  chown deploy /srv/proxy/conf.d"
+echo "   d. (optional) Set the PROXY_CONTAINER Actions variable to the proxy's container name;"
+echo "      otherwise CI picks the running container whose image name contains 'caddy'."
 echo ""
 echo "4. Seed GraphHopper OSM data (one-time, ~15-30 min):"
 echo ""
